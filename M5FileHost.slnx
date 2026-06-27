@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/M5FileHost.Core/M5FileHost.Core.csproj" />
+    <Project Path="src/M5FileHost.Infrastructure/M5FileHost.Infrastructure.csproj" />
+    <Project Path="src/M5FileHost.Web/M5FileHost.Web.csproj" />
+    <Project Path="src/M5FileHost.Worker/M5FileHost.Worker.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/M5FileHost.Tests/M5FileHost.Tests.csproj" />
+  </Folder>
+</Solution>

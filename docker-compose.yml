@@ -1,0 +1,130 @@
+name: m5-filehost
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: web
+    image: m5-filehost-web:local
+    container_name: m5-filehost-app
+    restart: unless-stopped
+    init: true
+    env_file: .env
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Include Error Detail=false
+      ConnectionStrings__Redis: redis:6379,password=${REDIS_PASSWORD},abortConnect=false
+      Uploads__RootPath: ${UPLOAD_DIR:-/data/uploads}
+      Uploads__MaxFileSizeMb: ${MAX_UPLOAD_SIZE_MB:-512}
+      Uploads__MaxFilesPerUpload: ${MAX_FILES_PER_UPLOAD:-20}
+      Uploads__KeepOriginalFiles: ${KEEP_ORIGINAL_FILES:-true}
+      ClamAv__Enabled: ${ENABLE_CLAMAV:-false}
+      ClamAv__Host: ${CLAMAV_HOST:-clamav}
+      ClamAv__Port: ${CLAMAV_PORT:-3310}
+      Features__EnableRegistration: ${ENABLE_REGISTRATION:-true}
+      Features__EnablePublicUploadsPage: ${ENABLE_PUBLIC_UPLOADS_PAGE:-true}
+      Features__EnableNsfw: ${ENABLE_NSFW:-true}
+      Database__MigrateOnStartup: "true"
+      DataProtection__KeysPath: /data/keys
+      Owner__Email: ${OWNER_EMAIL}
+      Owner__Username: ${OWNER_USERNAME}
+      Owner__Password: ${OWNER_PASSWORD}
+      AppUrl: ${APP_URL}
+      Email__Host: ${SMTP_HOST:-}
+      Email__Port: ${SMTP_PORT:-587}
+      Email__Username: ${SMTP_USERNAME:-}
+      Email__Password: ${SMTP_PASSWORD:-}
+      Email__FromAddress: ${SMTP_FROM:-}
+      Email__EnableSsl: ${SMTP_ENABLE_SSL:-true}
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    ports:
+      - "127.0.0.1:3055:8080"
+    volumes:
+      - ./data/uploads:/data/uploads
+      - ./data/keys:/data/keys
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks: [backend, updates]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
+    image: m5-filehost-worker:local
+    container_name: m5-filehost-worker
+    restart: unless-stopped
+    init: true
+    env_file: .env
+    environment:
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Include Error Detail=false
+      ConnectionStrings__Redis: redis:6379,password=${REDIS_PASSWORD},abortConnect=false
+      Uploads__RootPath: ${UPLOAD_DIR:-/data/uploads}
+      Uploads__MaxFileSizeMb: ${MAX_UPLOAD_SIZE_MB:-512}
+      Uploads__MaxFilesPerUpload: ${MAX_FILES_PER_UPLOAD:-20}
+      Uploads__KeepOriginalFiles: ${KEEP_ORIGINAL_FILES:-true}
+      ClamAv__Enabled: ${ENABLE_CLAMAV:-false}
+      ClamAv__Host: ${CLAMAV_HOST:-clamav}
+      ClamAv__Port: ${CLAMAV_PORT:-3310}
+    depends_on:
+      app: { condition: service_healthy }
+    volumes:
+      - ./data/uploads:/data/uploads
+    networks: [backend]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: m5-filehost-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [backend]
+
+  redis:
+    image: redis:7-alpine
+    container_name: m5-filehost-redis
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\""]
+    volumes:
+      - ./data/redis:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [backend]
+
+  clamav:
+    image: clamav/clamav:1.4
+    container_name: m5-filehost-clamav
+    restart: unless-stopped
+    profiles: [malware-scan]
+    volumes:
+      - ./data/clamav:/var/lib/clamav
+    networks: [backend, updates]
+
+networks:
+  backend:
+    internal: true
+  updates:

@@ -1,0 +1,46 @@
+@page "/settings"
+@attribute [Authorize]
+@inject AppDbContext Database
+@inject AuthenticationStateProvider Authentication
+<PageTitle>Settings · m5 file hoster</PageTitle>
+@if (_user is not null)
+{
+    <div class="page-header">
+        <div><span class="eyebrow">MAKE IT YOURS</span><h1>Account settings</h1><p>Profile, privacy and security controls.</p></div>
+        <form method="post" action="/api/auth/logout"><AntiforgeryToken /><button class="button tonal">Sign out</button></form>
+    </div>
+    <div class="settings-grid">
+        <section class="surface settings-card">
+            <h2>Public profile</h2>
+            <form method="post" action="/api/users/me/avatar" enctype="multipart/form-data" class="form-stack avatar-form">
+                <AntiforgeryToken /><label><span>Avatar image</span><input type="file" name="avatar" accept="image/png,image/jpeg,image/webp,image/avif" required /></label><button class="button tonal">Upload avatar</button>
+            </form>
+            <form data-json-form data-method="PATCH" action="/api/users/me" class="form-stack">
+                <AntiforgeryToken />
+                <label><span>Display name</span><input name="DisplayName" value="@_user.DisplayName" maxlength="80" /></label>
+                <label><span>Bio</span><textarea name="Bio" maxlength="500" rows="4">@_user.Bio</textarea></label>
+                <label class="check safety"><input type="checkbox" name="PublicProfile" checked="@_user.PublicProfile" /><span><strong>Public profile</strong><small>Let people browse your public gallery.</small></span></label>
+                <label class="check safety"><input type="checkbox" name="NsfwAllowed" checked="@_user.NsfwAllowed" /><span><strong>Allow NSFW browsing</strong><small>Content stays blurred until revealed.</small></span></label>
+                <button class="button filled">Save profile</button>
+            </form>
+        </section>
+        <section class="surface settings-card">
+            <h2>Change password</h2>
+            <form method="post" action="/api/users/me/password" class="form-stack">
+                <AntiforgeryToken />
+                <label><span>Current password</span><input type="password" name="currentPassword" required autocomplete="current-password" /></label>
+                <label><span>New password</span><input type="password" name="newPassword" required minlength="12" autocomplete="new-password" /></label>
+                <button class="button tonal">Update password</button>
+            </form>
+            <hr /><h2>Storage</h2><p><strong>@Format(_used)</strong> of @Format(_user.StorageQuotaBytes) used</p>
+            <div class="meter"><i style="@UsageStyle"></i></div>
+            <p class="subtle">API token management and account deletion require an administrator in this release.</p>
+        </section>
+    </div>
+}
+@code {
+    private ApplicationUser? _user; private long _used;
+    private string UsageStyle => $"width:{Math.Min(100, 100d * _used / Math.Max(1, _user?.StorageQuotaBytes ?? 1))}%";
+    protected override async Task OnInitializedAsync() { var state = await Authentication.GetAuthenticationStateAsync(); var id = Guid.Parse(state.User.FindFirstValue(ClaimTypes.NameIdentifier)!); _user = await Database.Users.AsNoTracking().SingleAsync(x => x.Id == id); _used = await Database.Files.Where(x => x.UploaderId == id).SumAsync(x => (long?)x.OriginalSize) ?? 0; }
+    private static string Format(long value) => FileCard.FormatBytes(value);
+}

@@ -1,0 +1,51 @@
+@page "/uploads"
+@inject AppDbContext Database
+<PageTitle>Browse uploads · m5 file hoster</PageTitle>
+<div class="page-header"><div><span class="eyebrow">THE PUBLIC GALLERY</span><h1>Fresh from the server</h1><p>Explore what the community has shared.</p></div></div>
+<form class="filter-bar" method="get">
+    <label class="search"><span>⌕</span><input name="q" value="@Query" placeholder="Search files or creators" /></label>
+    <select name="type">
+        <option value="">All types</option>
+        @foreach (var type in Enum.GetValues<UploadedFileType>())
+        {
+            <option value="@type" selected="@(Type == type.ToString())">@type</option>
+        }
+    </select>
+    <select name="sort"><option value="newest">Newest</option><option value="oldest" selected="@(Sort == "oldest")">Oldest</option><option value="views" selected="@(Sort == "views")">Most viewed</option><option value="downloads" selected="@(Sort == "downloads")">Most downloaded</option><option value="largest" selected="@(Sort == "largest")">Largest</option></select>
+    <label class="check chip-check"><input name="nsfw" type="checkbox" value="true" checked="@Nsfw" /><span>Show NSFW</span></label>
+    <button class="button tonal" type="submit">Apply</button>
+</form>
+@if (_files.Count == 0)
+{
+    <div class="empty large"><span>⌕</span><h2>No files found</h2><p>Try widening your filters.</p></div>
+}
+else
+{
+    <div class="file-grid browse">
+        @foreach (var file in _files)
+        {
+            <FileCard File="file" />
+        }
+    </div>
+    <nav class="pagination">
+        @if (Page > 1)
+        {
+            <a class="button tonal" href="@PageUrl(Page - 1)">← Previous</a>
+        }
+        <span>Page @Page</span>
+        @if (_hasNext)
+        {
+            <a class="button tonal" href="@PageUrl(Page + 1)">Next →</a>
+        }
+    </nav>
+}
+@code {
+    [SupplyParameterFromQuery(Name="q")] public string? Query { get; set; }
+    [SupplyParameterFromQuery(Name="type")] public string? Type { get; set; }
+    [SupplyParameterFromQuery(Name="sort")] public string Sort { get; set; } = "newest";
+    [SupplyParameterFromQuery(Name="nsfw")] public bool Nsfw { get; set; }
+    [SupplyParameterFromQuery(Name="page")] public int Page { get; set; } = 1;
+    private List<FileUpload> _files = []; private bool _hasNext;
+    protected override async Task OnParametersSetAsync() { Page = Math.Max(1, Page); var query = Database.Files.AsNoTracking().Include(x => x.Uploader).Where(x => x.Visibility == FileVisibility.Public && !x.IsHidden && !x.Uploader.IsBanned && (Nsfw || !x.IsNsfw)); if (!string.IsNullOrWhiteSpace(Query)) query = query.Where(x => EF.Functions.ILike(x.OriginalName, $"%{Query.Trim()}%") || (x.Title != null && EF.Functions.ILike(x.Title, $"%{Query.Trim()}%")) || EF.Functions.ILike(x.Uploader.UserName!, $"%{Query.Trim()}%")); if (Enum.TryParse<UploadedFileType>(Type, true, out var type)) query = query.Where(x => x.Type == type); query = Sort switch { "oldest" => query.OrderBy(x => x.CreatedAt), "views" => query.OrderByDescending(x => x.ViewCount), "downloads" => query.OrderByDescending(x => x.DownloadCount), "largest" => query.OrderByDescending(x => x.OriginalSize), _ => query.OrderByDescending(x => x.CreatedAt) }; var items = await query.Skip((Page - 1) * 24).Take(25).ToListAsync(); _hasNext = items.Count > 24; _files = items.Take(24).ToList(); }
+    private string PageUrl(int page) => $"/uploads?page={page}&q={Uri.EscapeDataString(Query ?? "")}&type={Uri.EscapeDataString(Type ?? "")}&sort={Sort}&nsfw={Nsfw.ToString().ToLowerInvariant()}";
+}

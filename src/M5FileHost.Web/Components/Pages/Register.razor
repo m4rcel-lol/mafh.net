@@ -1,0 +1,28 @@
+@page "/register"
+@inject NavigationManager Navigation
+<PageTitle>Create account · m5 file hoster</PageTitle>
+<div class="auth-page">
+    <section class="auth-card wide reveal">
+        <a class="brand solo" href="/"><span class="brand-mark">m5</span></a>
+        <span class="eyebrow">YOUR SPACE AWAITS</span><h1>Create your account</h1>
+        <p class="subtle">Upload, optimize and share on your terms.</p>
+        @if (Error is not null)
+        {
+            <div class="notice error">@Error</div>
+        }
+        <form method="post" action="/api/auth/register" class="form-stack">
+            <AntiforgeryToken />
+            <div class="field-pair">
+                <label><span>Username</span><input name="Username" required minlength="3" maxlength="32" pattern="[A-Za-z0-9_]+" autocomplete="username" /></label>
+                <label><span>Email</span><input type="email" name="Email" required maxlength="254" autocomplete="email" /></label>
+            </div>
+            <label><span>Password</span><input type="password" name="Password" required minlength="12" maxlength="128" autocomplete="new-password" /><small>12+ characters with upper, lower, number and symbol.</small></label>
+            <label class="check"><input type="checkbox" required /><span>I agree to the <a href="/terms">terms</a> and <a href="/rules">content rules</a>.</span></label>
+            <button class="button filled full" type="submit">Create account →</button>
+        </form>
+        <div class="auth-links center"><span>Already have one? <a href="/login">Sign in</a></span></div>
+    </section>
+</div>
+@code {
+    private string? Error { get { var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(new Uri(Navigation.Uri).Query); return query.TryGetValue("error", out var value) ? value.ToString() : null; } }
+}

@@ -1,0 +1,34 @@
+@page "/u/{Username}"
+@inject AppDbContext Database
+<PageTitle>@Username · m5 file hoster</PageTitle>
+<section class="profile-hero" hidden="@(!_found)">
+    <div class="profile-banner"></div>
+    <div class="profile-info">
+        <span class="profile-avatar" hidden="@(_user.AvatarPath is not null)">@Initial</span>
+        <img class="profile-avatar profile-avatar-image" src="/api/users/@_user.UserName/avatar" alt="" hidden="@(_user.AvatarPath is null)" />
+        <div>
+            <div class="name-row"><h1>@DisplayName</h1><span class="chip success" hidden="@(!_isStaff)">@_user.Role</span><span class="chip danger" hidden="@(!_user.IsBanned)">Suspended</span></div>
+            <p>&#64;@_user.UserName · joined @_user.CreatedAt.ToString("MMMM yyyy")</p>
+            <p class="bio">@_user.Bio</p>
+            <div class="profile-stats"><span><strong>@_files.Count</strong> uploads</span><span><strong>@TotalViews</strong> views</span><span><strong>@Format(TotalSize)</strong> shared</span></div>
+        </div>
+    </div>
+</section>
+<div class="center-state" hidden="@_found"><span class="state-icon">◎</span><h1>Profile unavailable</h1><p>This user is private or does not exist.</p></div>
+<section class="section-block profile-files" hidden="@(!_found)">
+    <div class="section-heading inline compact"><div><span class="eyebrow">PUBLIC GALLERY</span><h2>@Username uploads</h2></div></div>
+    <div class="file-grid browse">
+        @foreach (var file in _files)
+        {
+            <FileCard File="file" />
+        }
+    </div>
+    <div class="empty" hidden="@(_files.Count != 0)"><span>◇</span><h3>No public uploads</h3></div>
+</section>
+@code {
+    [Parameter] public string Username { get; set; } = "";
+    private ApplicationUser _user = new() { UserName = "unknown" }; private List<FileUpload> _files = []; private bool _found;
+    private bool _isStaff => _user.Role is UserRole.Admin or UserRole.Owner; private string DisplayName => _user.DisplayName ?? _user.UserName ?? "Unknown"; private string Initial => DisplayName[..1].ToUpperInvariant(); private long TotalSize => _files.Sum(x => x.OriginalSize); private int TotalViews => _files.Sum(x => x.ViewCount);
+    protected override async Task OnParametersSetAsync() { var user = await Database.Users.AsNoTracking().SingleOrDefaultAsync(x => x.NormalizedUserName == Username.ToUpper() && x.PublicProfile); _found = user is not null; if (user is null) return; _user = user; _files = user.IsBanned ? [] : await Database.Files.AsNoTracking().Include(x => x.Uploader).Where(x => x.UploaderId == _user.Id && x.Visibility == FileVisibility.Public && !x.IsHidden).OrderByDescending(x => x.CreatedAt).Take(60).ToListAsync(); }
+    private static string Format(long value) => FileCard.FormatBytes(value);
+}

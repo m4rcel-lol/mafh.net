@@ -1,0 +1,20 @@
+files.index.sarl {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:3055
+
+	header {
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Frame-Options "DENY"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+		-Server
+	}
+
+	log {
+		output file /var/log/caddy/files.index.sarl.log {
+			roll_size 100MiB
+			roll_keep 10
+		}
+		format json
+	}
+}

@@ -1,0 +1,56 @@
+@page "/"
+@inject AppDbContext Database
+
+<PageTitle>m5rcel's awesome file hoster</PageTitle>
+<section class="hero">
+    <div class="hero-glow glow-one"></div><div class="hero-glow glow-two"></div>
+    <div class="hero-copy reveal">
+        <span class="eyebrow">SELF-HOSTED · FAST · YOURS</span>
+        <h1>m5rcel's awesome<br /><span>file hoster</span></h1>
+        <p>Upload it. Compress it. Share it. Your files stay on your server, beautifully organized and ready for the world.</p>
+        <div class="hero-actions">
+            <AuthorizeView><Authorized><a class="button filled large" href="/dashboard">Open dashboard <span>→</span></a></Authorized><NotAuthorized><a class="button filled large" href="/register">Create account <span>→</span></a></NotAuthorized></AuthorizeView>
+            <a class="button tonal large" href="/uploads">Browse uploads</a>
+        </div>
+        <div class="trust-row"><span>● Local storage</span><span>● Smart compression</span><span>● Private by design</span></div>
+    </div>
+    <div class="upload-mock reveal delay-one" aria-hidden="true">
+        <div class="mock-top"><i></i><i></i><i></i><span>files.index.sarl/upload</span></div>
+        <div class="mock-drop"><span class="upload-orb">↑</span><strong>Drop your universe here</strong><small>images, video, archives and more</small></div>
+        <div class="mock-file"><span>◈</span><div><strong>aurora.png</strong><div class="progress"><i></i></div></div><b>72%</b></div>
+        <div class="mock-file"><span>▶</span><div><strong>launch.mp4</strong><small>Saved 18% · Ready</small></div><b class="done">✓</b></div>
+    </div>
+</section>
+
+<section class="section-block">
+    <div class="section-heading"><span class="eyebrow">BUILT DIFFERENT</span><h2>A file hoster that feels alive.</h2><p>Everything you need, without handing your data to someone else.</p></div>
+    <div class="feature-grid">
+        <article class="feature-card primary"><span>⌂</span><h3>Actually local</h3><p>Files live on your filesystem. No S3, no mystery cloud, no lock-in.</p></article>
+        <article class="feature-card secondary"><span>✦</span><h3>Smaller by magic</h3><p>Images, GIFs, video and audio are optimized automatically in the background.</p></article>
+        <article class="feature-card tertiary"><span>◫</span><h3>Every format welcome</h3><p>Preview media, inspect archives safely, and download everything else securely.</p></article>
+        <article class="feature-card warm"><span>◎</span><h3>Public galleries</h3><p>Share a single file or show the world a polished profile of your uploads.</p></article>
+        <article class="feature-card cool"><span>◉</span><h3>Powerful moderation</h3><p>Reports, NSFW controls, roles, audit trails and storage insight are built in.</p></article>
+        <article class="feature-card dark"><span>⚡</span><h3>Made to move</h3><p>Streaming uploads, durable jobs, responsive screens and thoughtful motion.</p></article>
+    </div>
+</section>
+
+<section class="section-block" hidden="@(_recent.Count == 0)">
+        <div class="section-heading inline">
+            <div><span class="eyebrow">FRESH DROPS</span><h2>Recently uploaded</h2></div>
+            <a class="button text" href="/uploads">See everything →</a>
+        </div>
+        <div class="file-grid">
+            @foreach (var file in _recent)
+            {
+                <FileCard File="file" />
+            }
+        </div>
+</section>
+
+<section class="cta-panel"><span class="cta-icon">↑</span><div><h2>Your files deserve a better home.</h2><p>Start sharing in seconds. Keep control forever.</p></div><AuthorizeView><Authorized><a class="button filled inverse" href="/upload">Upload files</a></Authorized><NotAuthorized><a class="button filled inverse" href="/register">Get started</a></NotAuthorized></AuthorizeView></section>
+<footer class="footer"><strong>m5rcel's awesome file hoster</strong><span>Fresh files, served locally.</span><nav><a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/rules">Rules</a><a href="/dmca">DMCA</a></nav></footer>
+
+@code {
+    private List<FileUpload> _recent = [];
+    protected override async Task OnInitializedAsync() => _recent = await Database.Files.AsNoTracking().Include(x => x.Uploader).Where(x => x.Visibility == FileVisibility.Public && !x.IsHidden && !x.IsNsfw && !x.Uploader.IsBanned).OrderByDescending(x => x.CreatedAt).Take(4).ToListAsync();
+}

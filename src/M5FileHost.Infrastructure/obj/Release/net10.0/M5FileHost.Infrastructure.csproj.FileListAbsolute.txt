@@ -1,0 +1,17 @@
+/Users/m5rcel/Documents/m5rcelsawesomefilehoster.net/src/M5FileHost.Infrastructure/bin/Release/net10.0/M5FileHost.Infrastructure.deps.json
+/Users/m5rcel/Documents/m5rcelsawesomefilehoster.net/src/M5FileHost.Infrastructure/bin/Release/net10.0/M5FileHost.Infrastructure.runtimeconfig.json
+/Users/m5rcel/Documents/m5rcelsawesomefilehoster.net/src/M5FileHost.Infrastructure/bin/Release/net10.0/M5FileHost.Infrastructure.dll
+/Users/m5rcel/Documents/m5rcelsawesomefilehoster.net/src/M5FileHost.Infrastructure/bin/Release/net10.0/M5FileHost.Infrastructure.pdb
+/Users/m5rcel/Documents/m5rcelsawesomefilehoster.net/src/M5FileHost.Infrastructure/bin/Release/net10.0/M5FileHost.Core.dll
+/Users/m5rcel/Documents/m5rcelsawesomefilehoster.net/src/M5FileHost.Infrastructure/bin/Release/net10.0/M5FileHost.Core.pdb
+/Users/m5rcel/Documents/m5rcelsawesomefilehoster.net/src/M5FileHost.Infrastructure/obj/Release/net10.0/M5FileHost.Infrastructure.csproj.AssemblyReference.cache
+/Users/m5rcel/Documents/m5rcelsawesomefilehoster.net/src/M5FileHost.Infrastructure/obj/Release/net10.0/M5FileHost.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+/Users/m5rcel/Documents/m5rcelsawesomefilehoster.net/src/M5FileHost.Infrastructure/obj/Release/net10.0/M5FileHost.Infrastructure.AssemblyInfoInputs.cache
+/Users/m5rcel/Documents/m5rcelsawesomefilehoster.net/src/M5FileHost.Infrastructure/obj/Release/net10.0/M5FileHost.Infrastructure.AssemblyInfo.cs
+/Users/m5rcel/Documents/m5rcelsawesomefilehoster.net/src/M5FileHost.Infrastructure/obj/Release/net10.0/M5FileHost.Infrastructure.csproj.CoreCompileInputs.cache
+/Users/m5rcel/Documents/m5rcelsawesomefilehoster.net/src/M5FileHost.Infrastructure/obj/Release/net10.0/M5FileHo.0837EA2F.Up2Date
+/Users/m5rcel/Documents/m5rcelsawesomefilehoster.net/src/M5FileHost.Infrastructure/obj/Release/net10.0/M5FileHost.Infrastructure.dll
+/Users/m5rcel/Documents/m5rcelsawesomefilehoster.net/src/M5FileHost.Infrastructure/obj/Release/net10.0/refint/M5FileHost.Infrastructure.dll
+/Users/m5rcel/Documents/m5rcelsawesomefilehoster.net/src/M5FileHost.Infrastructure/obj/Release/net10.0/M5FileHost.Infrastructure.pdb
+/Users/m5rcel/Documents/m5rcelsawesomefilehoster.net/src/M5FileHost.Infrastructure/obj/Release/net10.0/M5FileHost.Infrastructure.genruntimeconfig.cache
+/Users/m5rcel/Documents/m5rcelsawesomefilehoster.net/src/M5FileHost.Infrastructure/obj/Release/net10.0/ref/M5FileHost.Infrastructure.dll

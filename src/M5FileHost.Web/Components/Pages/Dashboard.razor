@@ -1,0 +1,50 @@
+@page "/dashboard"
+@attribute [Authorize]
+@inject AppDbContext Database
+@inject AuthenticationStateProvider Authentication
+<PageTitle>Dashboard · m5 file hoster</PageTitle>
+<div class="page-header">
+    <div><span class="eyebrow">YOUR COMMAND CENTER</span><h1>Hey, @(_user?.DisplayName ?? _user?.UserName).</h1><p>Here is what your corner of the internet is doing.</p></div>
+    <a class="button filled large" href="/upload">＋ Upload files</a>
+</div>
+<div class="stat-grid">
+    <article class="stat-card purple"><span>STORAGE USED</span><strong>@Format(_used)</strong><small>of @Format(_user?.StorageQuotaBytes ?? 0)</small><div class="meter"><i style="@UsageStyle"></i></div></article>
+    <article class="stat-card green"><span>UPLOADS</span><strong>@_files.Count</strong><small>@_publicCount public</small></article>
+    <article class="stat-card orange"><span>TOTAL VIEWS</span><strong>@_files.Sum(x => x.ViewCount).ToString("N0")</strong><small>across all files</small></article>
+    <article class="stat-card blue"><span>DOWNLOADS</span><strong>@_files.Sum(x => x.DownloadCount).ToString("N0")</strong><small>served securely</small></article>
+</div>
+<div class="dashboard-grid">
+    <section class="surface">
+        <div class="section-heading inline compact"><div><span class="eyebrow">RECENT</span><h2>Your latest uploads</h2></div><a href="/u/@_user?.UserName">Public profile →</a></div>
+        @if (_files.Count == 0)
+        {
+            <div class="empty"><span>◇</span><h3>Nothing here yet</h3><p>Your first upload is waiting to happen.</p><a class="button tonal" href="/upload">Choose a file</a></div>
+        }
+        else
+        {
+            <div class="file-list">
+                @foreach (var file in _files.Take(6))
+                {
+                    <a href="/f/@file.Slug">
+                        <span class="list-icon">@file.Type.ToString()[0]</span>
+                        <div><strong>@(file.Title ?? file.OriginalName)</strong><small>@file.CreatedAt.ToString("MMM d") · @Format(file.OriginalSize)</small></div>
+                        <span class="status @file.ProcessingStatus.ToString().ToLowerInvariant()">@file.ProcessingStatus</span>
+                    </a>
+                }
+            </div>
+        }
+    </section>
+    <aside class="surface quick">
+        <span class="eyebrow">QUICK ACTIONS</span>
+        <a href="/upload"><span>↑</span><div><strong>Upload something</strong><small>Drag, drop, done.</small></div></a>
+        <a href="/uploads"><span>◫</span><div><strong>Explore uploads</strong><small>See what is new.</small></div></a>
+        <a href="/settings"><span>⚙</span><div><strong>Tune your profile</strong><small>Bio, safety and account.</small></div></a>
+    </aside>
+</div>
+@code {
+    private ApplicationUser? _user; private List<FileUpload> _files = []; private long _used; private int _publicCount;
+    private int UsagePercent => _user is null || _user.StorageQuotaBytes == 0 ? 0 : (int)Math.Min(100, 100d * _used / _user.StorageQuotaBytes);
+    private string UsageStyle => $"width:{UsagePercent}%";
+    protected override async Task OnInitializedAsync() { var state = await Authentication.GetAuthenticationStateAsync(); var id = Guid.Parse(state.User.FindFirstValue(ClaimTypes.NameIdentifier)!); _user = await Database.Users.AsNoTracking().SingleAsync(x => x.Id == id); _files = await Database.Files.AsNoTracking().Where(x => x.UploaderId == id).OrderByDescending(x => x.CreatedAt).ToListAsync(); _used = _files.Sum(x => x.OriginalSize); _publicCount = _files.Count(x => x.Visibility == FileVisibility.Public && !x.IsHidden); }
+    private static string Format(long value) => FileCard.FormatBytes(value);
+}

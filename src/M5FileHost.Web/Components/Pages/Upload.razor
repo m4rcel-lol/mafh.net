@@ -1,0 +1,9 @@
+@page "/upload"
+@attribute [Authorize]
+<PageTitle>Upload · m5 file hoster</PageTitle>
+<div class="page-header centered"><div><span class="eyebrow">MAKE IT FLY</span><h1>Upload your files</h1><p>We will inspect, optimize and prepare them for sharing.</p></div></div>
+<form id="upload-form" class="upload-surface" action="/api/uploads" method="post" enctype="multipart/form-data"><AntiforgeryToken />
+    <label class="drop-zone" for="file-picker"><input id="file-picker" name="Files" type="file" multiple required /><span class="upload-orb large">↑</span><h2>Drop your universe here</h2><p>or click to choose files</p><div class="chip-row centered"><span class="chip">Images</span><span class="chip">Video</span><span class="chip">Audio</span><span class="chip">Archives</span><span class="chip">Documents</span></div><small>Up to 512 MB each · maximum 20 files</small></label>
+    <div id="upload-queue" class="upload-queue" hidden></div>
+    <section class="upload-details"><h2>Share details</h2><div class="field-pair"><label><span>Title <small>optional</small></span><input name="Title" maxlength="160" placeholder="Something memorable" /></label><label><span>Visibility</span><select name="Visibility"><option>Public</option><option>Unlisted</option><option>Private</option></select></label></div><label><span>Description <small>optional</small></span><textarea name="Description" maxlength="2000" rows="3" placeholder="What should people know?"></textarea></label><label><span>Tags <small>comma separated</small></span><input name="Tags" maxlength="350" placeholder="design, wallpaper, release" /></label><label class="check safety"><input type="checkbox" name="IsNsfw" value="true" /><span><strong>Mark as NSFW</strong><small>Previews will be blurred and hidden from safe browsing.</small></span></label><button class="button filled large full" type="submit">Upload and optimize <span>↑</span></button><div id="upload-result" role="status"></div></section>
+</form>
