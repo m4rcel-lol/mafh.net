@@ -3,7 +3,7 @@
 <PageTitle>Browse uploads · m5 file hoster</PageTitle>
 <div class="page-header"><div><span class="eyebrow">THE PUBLIC GALLERY</span><h1>Fresh from the server</h1><p>Explore what the community has shared.</p></div></div>
 <form class="filter-bar" method="get">
-    <label class="search"><span>⌕</span><input name="q" value="@Query" placeholder="Search files or creators" /></label>
+    <label class="search"><span class="emoji-icon" aria-hidden="true">🔎</span><input name="q" value="@Query" placeholder="Search files or creators" /></label>
     <select name="type">
         <option value="">All types</option>
         @foreach (var type in Enum.GetValues<UploadedFileType>())
@@ -17,7 +17,7 @@
 </form>
 @if (_files.Count == 0)
 {
-    <div class="empty large"><span>⌕</span><h2>No files found</h2><p>Try widening your filters.</p></div>
+    <div class="empty large"><span class="emoji-icon" aria-hidden="true">🔎</span><h2>No files found</h2><p>Try widening your filters.</p></div>
 }
 else
 {

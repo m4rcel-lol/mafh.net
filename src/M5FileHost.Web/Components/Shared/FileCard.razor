@@ -1,19 +1,19 @@
 <article class="file-card @(File.IsNsfw ? "nsfw" : "")">
     <a class="file-preview" href="/f/@File.Slug">
         <img src="/api/uploads/@File.Slug/thumbnail" alt="" loading="lazy" hidden="@(File.ThumbnailPath is null)" />
-        <span class="type-art" hidden="@(File.ThumbnailPath is not null)">@Icon(File.Type)</span>
+        <span class="type-art emoji-icon" aria-hidden="true" hidden="@(File.ThumbnailPath is not null)">@IconFor(File.Type)</span>
         <span class="nsfw-cover" hidden="@(!File.IsNsfw)">NSFW · tap to view</span>
     </a>
     <div class="file-card-body">
         <div class="chip-row"><span class="chip">@File.Type</span><span class="chip">@FormatBytes(File.OriginalSize)</span><span class="chip success" hidden="@(Savings == 0)">−@Savings%</span></div>
         <h3><a href="/f/@File.Slug">@(File.Title ?? File.OriginalName)</a></h3>
         <p class="meta"><a href="/u/@File.Uploader.UserName">&#64;@File.Uploader.UserName</a> · @File.CreatedAt.ToString("MMM d, yyyy")</p>
-        <p class="mini-stats">◉ @File.ViewCount &nbsp; ⇩ @File.DownloadCount</p>
+        <p class="mini-stats">👁️ @File.ViewCount &nbsp; ⬇️ @File.DownloadCount</p>
     </div>
 </article>
 @code {
     [Parameter, EditorRequired] public FileUpload File { get; set; } = null!;
     private int Savings => File.ProcessedSize is > 0 && File.ProcessedSize < File.OriginalSize ? (int)Math.Round(100d * (File.OriginalSize - File.ProcessedSize.Value) / File.OriginalSize) : 0;
     public static string FormatBytes(long value) { string[] units = ["B", "KB", "MB", "GB", "TB"]; var size = (double)value; var unit = 0; while (size >= 1024 && unit < units.Length - 1) { size /= 1024; unit++; } return $"{size:0.#} {units[unit]}"; }
-    private static string Icon(UploadedFileType type) => type switch { UploadedFileType.Image => "◈", UploadedFileType.Gif => "✦", UploadedFileType.Video => "▶", UploadedFileType.Audio => "♫", UploadedFileType.Archive => "▣", UploadedFileType.Pdf => "PDF", UploadedFileType.Text => "¶", _ => "◇" };
+    public static string IconFor(UploadedFileType type) => type switch { UploadedFileType.Image => "🖼️", UploadedFileType.Gif => "✨", UploadedFileType.Video => "🎬", UploadedFileType.Audio => "🎵", UploadedFileType.Archive => "📦", UploadedFileType.Pdf => "📕", UploadedFileType.Document => "📄", UploadedFileType.Text => "📝", _ => "📎" };
 }

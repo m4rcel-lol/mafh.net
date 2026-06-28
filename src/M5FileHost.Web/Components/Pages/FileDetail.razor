@@ -3,7 +3,7 @@
 @inject AuthenticationStateProvider Authentication
 <PageTitle>@Title · m5 file hoster</PageTitle>
 <HeadContent><meta property="og:title" content="@Title" /><meta property="og:description" content="@OpenGraphDescription" /></HeadContent>
-<div class="center-state" hidden="@_found"><div class="state-icon">◇</div><h1>File unavailable</h1><p>It may be private, hidden, or gone.</p><a class="button tonal" href="/uploads">Browse uploads</a></div>
+<div class="center-state" hidden="@_found"><div class="state-icon emoji-icon" aria-hidden="true">📄</div><h1>File unavailable</h1><p>It may be private, hidden, or gone.</p><a class="button tonal" href="/uploads">Browse uploads</a></div>
 <div class="detail-layout" hidden="@(!_found)">
     <section class="preview-panel @(_file.IsNsfw ? "nsfw" : "")">
         <input id="reveal-nsfw" class="reveal-toggle" type="checkbox" />
@@ -11,7 +11,7 @@
         <div class="media-wrap">
             <img src="/api/uploads/@_file.Slug/content" alt="@Title" hidden="@(!IsImage)" />
             <video src="/api/uploads/@_file.Slug/content" controls preload="metadata" hidden="@(!IsVideo)"></video>
-            <div class="audio-art" hidden="@(!IsAudio)">♫</div><audio src="/api/uploads/@_file.Slug/content" controls preload="metadata" hidden="@(!IsAudio)"></audio>
+            <div class="audio-art emoji-icon" aria-hidden="true" hidden="@(!IsAudio)">🎵</div><audio src="/api/uploads/@_file.Slug/content" controls preload="metadata" hidden="@(!IsAudio)"></audio>
             <iframe src="/api/uploads/@_file.Slug/content" title="PDF preview" hidden="@(!IsPdf)"></iframe>
             <div class="generic-preview" hidden="@IsPreviewable"><span>@FileIcon</span><h2>@_file.Type</h2><p>Preview unavailable for this file type.</p></div>
         </div>
@@ -20,7 +20,7 @@
         <div class="chip-row"><span class="chip">@_file.Type</span><span class="chip danger" hidden="@(!_file.IsNsfw)">NSFW</span><span class="chip status @_file.ProcessingStatus.ToString().ToLowerInvariant()">@_file.ProcessingStatus</span></div>
         <h1>@Title</h1><p class="description">@_file.Description</p>
         <a class="uploader" href="/u/@_file.Uploader.UserName"><span class="avatar">@UploaderInitial</span><div><small>Uploaded by</small><strong>&#64;@_file.Uploader.UserName</strong></div></a>
-        <div class="detail-actions"><a class="button filled full" href="/api/uploads/@_file.Slug/content?download=true">⇩ Download</a><button class="button tonal" type="button" data-copy="@AbsoluteUrl">Copy link</button></div>
+        <div class="detail-actions"><a class="button filled full" href="/api/uploads/@_file.Slug/content?download=true"><span class="emoji-icon" aria-hidden="true">⬇️</span> Download</a><button class="button tonal" type="button" data-copy="@AbsoluteUrl">Copy link</button></div>
         <dl class="metadata"><div><dt>Original size</dt><dd>@Format(_file.OriginalSize)</dd></div><div><dt>Optimized size</dt><dd>@OptimizedSize</dd></div><div><dt>Uploaded</dt><dd>@_file.CreatedAt.ToString("MMM d, yyyy")</dd></div><div><dt>Views / downloads</dt><dd>@_file.ViewCount / @_file.DownloadCount</dd></div><div><dt>MIME type</dt><dd>@_file.MimeType</dd></div></dl>
         <details class="hash"><summary>SHA-256 fingerprint</summary><code>@_file.Sha256</code></details>
         <details class="report-box"><summary>Report this file</summary><form method="post" action="/api/uploads/@_file.Id/report" class="form-stack compact"><AntiforgeryToken /><select name="reason" required><option value="">Choose a reason</option><option>Illegal content</option><option>Malware</option><option>Copyright</option><option>Harassment or doxxing</option><option>Unmarked NSFW</option><option>Other</option></select><textarea name="message" maxlength="1000" placeholder="Optional details"></textarea><button class="button tonal">Send report</button></form></details>
@@ -37,7 +37,7 @@
     [Parameter] public string Slug { get; set; } = "";
     private FileUpload _file = new() { Uploader = new ApplicationUser { UserName = "unknown" } }; private bool _canManage; private bool _found;
     private string Title => _file.Title ?? _file.OriginalName; private string AbsoluteUrl => $"https://files.index.sarl/f/{Slug}"; private string OpenGraphDescription => _file.IsNsfw ? "NSFW upload — preview hidden" : _file.Description ?? "Shared on m5rcel's awesome file hoster"; private string OptimizedSize => _file.ProcessedSize is long size ? Format(size) : "Processing"; private string UploaderInitial => (_file.Uploader.UserName ?? "?")[..1].ToUpperInvariant();
-    private bool IsImage => _file.Type is UploadedFileType.Image or UploadedFileType.Gif; private bool IsVideo => _file.Type == UploadedFileType.Video; private bool IsAudio => _file.Type == UploadedFileType.Audio; private bool IsPdf => _file.Type == UploadedFileType.Pdf; private bool IsPreviewable => IsImage || IsVideo || IsAudio || IsPdf; private string FileIcon => _file.Type.ToString()[0].ToString();
+    private bool IsImage => _file.Type is UploadedFileType.Image or UploadedFileType.Gif; private bool IsVideo => _file.Type == UploadedFileType.Video; private bool IsAudio => _file.Type == UploadedFileType.Audio; private bool IsPdf => _file.Type == UploadedFileType.Pdf; private bool IsPreviewable => IsImage || IsVideo || IsAudio || IsPdf; private string FileIcon => FileCard.IconFor(_file.Type);
     protected override async Task OnParametersSetAsync() { var state = await Authentication.GetAuthenticationStateAsync(); var id = Guid.TryParse(state.User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsed) ? parsed : Guid.Empty; var privileged = state.User.IsInRole(nameof(UserRole.Admin)) || state.User.IsInRole(nameof(UserRole.Owner)); var file = await Database.Files.Include(x => x.Uploader).Include(x => x.FileTags).ThenInclude(x => x.Tag).SingleOrDefaultAsync(x => x.Slug == Slug); if (file is null || !((!file.IsHidden && file.Visibility != FileVisibility.Private) || file.UploaderId == id || privileged)) { _found = false; return; } _found = true; _file = file; _canManage = file.UploaderId == id || privileged; if (!file.IsHidden && file.Visibility == FileVisibility.Public) { file.ViewCount++; await Database.SaveChangesAsync(); } }
     private static string Format(long value) => FileCard.FormatBytes(value);
 }

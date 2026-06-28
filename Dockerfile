@@ -22,7 +22,7 @@ RUN apk add --no-cache ffmpeg gifsicle 7zip krb5-libs libgomp \
     && chown -R "$APP_UID:$APP_UID" /data
 WORKDIR /app
 USER $APP_UID
-ENV ASPNETCORE_URLS=http://+:8080 DOTNET_EnableDiagnostics=0
+ENV DOTNET_EnableDiagnostics=0
 
 FROM runtime-base AS web
 COPY --from=build --chown=$APP_UID:$APP_UID /out/web ./

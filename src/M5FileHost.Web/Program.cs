@@ -38,7 +38,7 @@ builder.Services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, AppClai
 builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme).AddIdentityCookies();
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    options.Cookie.Name = "__Host-m5filehost";
+    options.Cookie.Name = builder.Environment.IsDevelopment() ? "m5filehost-dev" : "__Host-m5filehost";
     options.Cookie.HttpOnly = true;
     options.Cookie.SameSite = SameSiteMode.Lax;
     options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;

@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Options;
 
 namespace M5FileHost.Web.Controllers;
@@ -42,66 +43,81 @@ public sealed partial class UploadsController(AppDbContext database, IFileStorag
             if (detected.MimeType == "application/x-executable") return BadRequest(new { error = "Executable file signatures are blocked." });
             input.Position = 0;
             var id = Guid.NewGuid();
+            var slug = CreateSlug();
             StoredFile stored;
             try { stored = await storage.SaveOriginalAsync(input, id, detected.Extension, _options.MaxFileSizeBytes, cancellationToken); }
             catch (InvalidDataException exception) { return BadRequest(new { error = exception.Message }); }
 
-            await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+            UploadPersistenceResult persistence;
             try
             {
-                await database.Database.ExecuteSqlRawAsync("SELECT 1 FROM \"AspNetUsers\" WHERE \"Id\" = {0} FOR UPDATE", [userId], cancellationToken);
-                var user = await database.Users.SingleAsync(x => x.Id == userId, cancellationToken);
-                var used = await database.Files.Where(x => x.UploaderId == userId).SumAsync(x => (long?)x.OriginalSize, cancellationToken) ?? 0;
-                if (used + stored.Size > user.StorageQuotaBytes)
-                {
-                    System.IO.File.Delete(storage.GetAbsolutePath(stored.RelativePath));
-                    await transaction.RollbackAsync(cancellationToken);
-                    return StatusCode(StatusCodes.Status413PayloadTooLarge, new { error = "This upload would exceed your storage quota." });
-                }
-                var duplicate = await database.Files.AsNoTracking().FirstOrDefaultAsync(x => x.UploaderId == userId && x.Sha256 == stored.Sha256 && !x.IsHidden, cancellationToken);
-                if (duplicate is not null)
-                {
-                    System.IO.File.Delete(storage.GetAbsolutePath(stored.RelativePath));
-                    await transaction.RollbackAsync(cancellationToken);
-                    results.Add(new(duplicate.Id, duplicate.Slug, duplicate.OriginalName, duplicate.ProcessingStatus));
-                    continue;
-                }
-                var upload = new FileUpload
-                {
-                    Id = id,
-                    Slug = CreateSlug(),
-                    Title = CleanOptional(request.Title, 160),
-                    Description = CleanOptional(request.Description, 2_000),
-                    OriginalName = originalName,
-                    StoredName = Path.GetFileName(stored.RelativePath),
-                    MimeType = detected.MimeType,
-                    Extension = detected.Extension,
-                    Type = detected.Type,
-                    OriginalSize = stored.Size,
-                    Sha256 = stored.Sha256,
-                    OriginalPath = stored.RelativePath,
-                    Visibility = visibility,
-                    IsNsfw = request.IsNsfw,
-                    UploaderId = userId
-                };
-                foreach (var tagName in tags)
-                {
-                    var tag = await database.Tags.SingleOrDefaultAsync(x => x.Name == tagName, cancellationToken) ?? new Tag { Id = Guid.NewGuid(), Name = tagName };
-                    upload.FileTags.Add(new FileTag { File = upload, Tag = tag });
-                }
-                database.Files.Add(upload);
-                await database.SaveChangesAsync(cancellationToken);
-                await transaction.CommitAsync(cancellationToken);
-                try { await queue.EnqueueAsync(new(upload.Id), cancellationToken); }
-                catch (Exception exception) { logger.LogError(exception, "Upload {FileId} is pending but Redis enqueue failed; worker recovery will retry", upload.Id); }
-                results.Add(new(upload.Id, upload.Slug, upload.OriginalName, upload.ProcessingStatus));
+                var strategy = database.Database.CreateExecutionStrategy();
+                persistence = await strategy.ExecuteInTransactionAsync(
+                    async token =>
+                    {
+                        // A failed attempt can leave Added entities tracked. Each retry must
+                        // rebuild its unit of work from database state.
+                        database.ChangeTracker.Clear();
+                        await database.Database.ExecuteSqlRawAsync("SELECT 1 FROM \"AspNetUsers\" WHERE \"Id\" = {0} FOR UPDATE", [userId], token);
+                        var user = await database.Users.SingleAsync(x => x.Id == userId, token);
+                        var used = await database.Files.Where(x => x.UploaderId == userId).SumAsync(x => (long?)x.OriginalSize, token) ?? 0;
+                        if (used + stored.Size > user.StorageQuotaBytes) return UploadPersistenceResult.QuotaExceeded();
+
+                        var duplicate = await database.Files.AsNoTracking().FirstOrDefaultAsync(x => x.UploaderId == userId && x.Sha256 == stored.Sha256 && !x.IsHidden, token);
+                        if (duplicate is not null)
+                        {
+                            return UploadPersistenceResult.Duplicate(new(duplicate.Id, duplicate.Slug, duplicate.OriginalName, duplicate.ProcessingStatus));
+                        }
+
+                        var upload = new FileUpload
+                        {
+                            Id = id,
+                            Slug = slug,
+                            Title = CleanOptional(request.Title, 160),
+                            Description = CleanOptional(request.Description, 2_000),
+                            OriginalName = originalName,
+                            StoredName = Path.GetFileName(stored.RelativePath),
+                            MimeType = detected.MimeType,
+                            Extension = detected.Extension,
+                            Type = detected.Type,
+                            OriginalSize = stored.Size,
+                            Sha256 = stored.Sha256,
+                            OriginalPath = stored.RelativePath,
+                            Visibility = visibility,
+                            IsNsfw = request.IsNsfw,
+                            UploaderId = userId
+                        };
+                        foreach (var tagName in tags)
+                        {
+                            var tag = await database.Tags.SingleOrDefaultAsync(x => x.Name == tagName, token) ?? new Tag { Id = Guid.NewGuid(), Name = tagName };
+                            upload.FileTags.Add(new FileTag { File = upload, Tag = tag });
+                        }
+                        database.Files.Add(upload);
+                        await database.SaveChangesAsync(token);
+                        return UploadPersistenceResult.Created(new(upload.Id, upload.Slug, upload.OriginalName, upload.ProcessingStatus));
+                    },
+                    token => database.Files.AsNoTracking().AnyAsync(x => x.Id == id, token),
+                    IsolationLevel.Serializable,
+                    cancellationToken);
             }
-            catch
+            catch (Exception exception)
             {
-                await transaction.RollbackAsync(CancellationToken.None);
-                System.IO.File.Delete(storage.GetAbsolutePath(stored.RelativePath));
+                await DeleteStoredFileIfUncommittedAsync(id, stored, exception);
                 throw;
             }
+
+            if (persistence.Outcome == UploadPersistenceOutcome.QuotaExceeded)
+            {
+                DeleteStoredFile(stored);
+                return StatusCode(StatusCodes.Status413PayloadTooLarge, new { error = "This upload would exceed your storage quota." });
+            }
+            if (persistence.Outcome == UploadPersistenceOutcome.Duplicate) DeleteStoredFile(stored);
+            else
+            {
+                try { await queue.EnqueueAsync(new(id), cancellationToken); }
+                catch (Exception exception) { logger.LogError(exception, "Upload {FileId} is pending but Redis enqueue failed; worker recovery will retry", id); }
+            }
+            results.Add(persistence.Result!);
         }
         return Ok(results);
     }
@@ -207,7 +223,35 @@ public sealed partial class UploadsController(AppDbContext database, IFileStorag
     private static string? CleanOptional(string? value, int max) { var clean = value?.Trim(); if (string.IsNullOrEmpty(clean)) return null; return clean.Length <= max ? clean : clean[..max]; }
     private static string[] ParseTags(string? value) => (value ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(x => x.ToLowerInvariant()).Where(x => TagRegex().IsMatch(x)).Distinct().Take(10).ToArray();
     private static string CreateSlug() => Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(12)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+    private async Task DeleteStoredFileIfUncommittedAsync(Guid id, StoredFile stored, Exception uploadException)
+    {
+        try
+        {
+            database.ChangeTracker.Clear();
+            if (await database.Files.AsNoTracking().AnyAsync(x => x.Id == id, CancellationToken.None)) return;
+        }
+        catch (Exception verificationException)
+        {
+            logger.LogWarning(verificationException, "Could not verify whether upload {FileId} committed; preserving its stored file", id);
+            return;
+        }
+        logger.LogError(uploadException, "Upload {FileId} failed before its database row committed; removing its stored file", id);
+        DeleteStoredFile(stored);
+    }
+    private void DeleteStoredFile(StoredFile stored)
+    {
+        try { System.IO.File.Delete(storage.GetAbsolutePath(stored.RelativePath)); }
+        catch (Exception exception) { logger.LogError(exception, "Could not remove unreferenced upload at {RelativePath}", stored.RelativePath); }
+    }
     [GeneratedRegex("^[a-z0-9_-]{1,32}$")] private static partial Regex TagRegex();
+
+    private enum UploadPersistenceOutcome { Created, Duplicate, QuotaExceeded }
+    private sealed record UploadPersistenceResult(UploadPersistenceOutcome Outcome, UploadResult? Result)
+    {
+        public static UploadPersistenceResult Created(UploadResult result) => new(UploadPersistenceOutcome.Created, result);
+        public static UploadPersistenceResult Duplicate(UploadResult result) => new(UploadPersistenceOutcome.Duplicate, result);
+        public static UploadPersistenceResult QuotaExceeded() => new(UploadPersistenceOutcome.QuotaExceeded, null);
+    }
 }
 
 public sealed class UploadRequest
