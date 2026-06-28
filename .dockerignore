@@ -1,0 +1,9 @@
+.git/
+.env
+.DS_Store
+**/bin
+**/obj
+TestResults/
+data/
+backups/
+README.md

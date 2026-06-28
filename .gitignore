@@ -1,0 +1,9 @@
+bin/
+obj/
+.env
+.DS_Store
+*.user
+*.suo
+TestResults/
+data/*
+!data/.gitkeep

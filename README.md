@@ -82,6 +82,12 @@ docker compose ps
 docker compose logs -f app worker
 ```
 
+Files whose names start with `.` are required. If deploying without Git, copy
+the repository directory itself (for example, `rsync -a ./ user@host:~/mafh.net/`)
+instead of using a shell wildcard such as `scp *`, which omits `.env.example`,
+`.dockerignore`, and `.gitignore`. Never copy or commit the secret `.env` file;
+create it on the server from `.env.example`.
+
 The app applies committed EF Core migrations on startup and seeds the owner only when all three `OWNER_*` variables are present. After the first successful login, blank `OWNER_PASSWORD` in `.env` and recreate the app container so the bootstrap password is no longer present in its environment:
 
 ```bash
@@ -212,6 +218,7 @@ Back up before upgrades. Migrations are forward-only in production; rollback mea
 
 ## Troubleshooting
 
+- **Docker sends a very large build context or publish fails with `NETSDK1064`:** confirm `.dockerignore` exists on the server, remove any copied `bin`/`obj` directories, then rebuild with `docker compose build --no-cache app worker`.
 - **App is unhealthy:** inspect `docker compose logs app postgres`; health checks require a live database.
 - **Worker jobs stay pending:** inspect `docker compose logs worker redis`; pending database rows are republished every five minutes.
 - **Upload permission denied:** `sudo chown -R 1654:1654 data/uploads data/keys`.
