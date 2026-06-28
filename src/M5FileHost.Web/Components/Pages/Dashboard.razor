@@ -7,6 +7,7 @@
     <div><span class="eyebrow">DASHBOARD</span><h1 data-dashboard-greeting data-name="@GreetingName" lang="en">Hello, @GreetingName.</h1><p>Your files and account activity.</p></div>
     <a class="button filled large" href="/upload"><span class="emoji-icon" aria-hidden="true">📤</span> Upload files</a>
 </div>
+<div class="notice success" hidden="@(Uploaded < 1)"><strong>Upload complete.</strong> @Uploaded @(Uploaded == 1 ? "file was" : "files were") saved and queued for processing.</div>
 <div class="stat-grid">
     <article class="stat-card purple"><span>STORAGE USED</span><strong>@Format(_used)</strong><small>of @Format(_user?.StorageQuotaBytes ?? 0)</small><div class="meter"><i style="@UsageStyle"></i></div></article>
     <article class="stat-card green"><span>UPLOADS</span><strong>@_files.Count</strong><small>@_publicCount public</small></article>
@@ -42,6 +43,7 @@
     </aside>
 </div>
 @code {
+    [SupplyParameterFromQuery(Name = "uploaded")] public int Uploaded { get; set; }
     private ApplicationUser? _user; private List<FileUpload> _files = []; private long _used; private int _publicCount;
     private string GreetingName => _user?.DisplayName ?? _user?.UserName ?? "there";
     private int UsagePercent => _user is null || _user.StorageQuotaBytes == 0 ? 0 : (int)Math.Min(100, 100d * _used / _user.StorageQuotaBytes);

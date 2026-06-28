@@ -2,7 +2,10 @@
     <a class="file-preview" href="/f/@File.Slug">
         <img src="/api/uploads/@File.Slug/thumbnail" alt="" loading="lazy" hidden="@(File.ThumbnailPath is null)" />
         <span class="type-art emoji-icon" aria-hidden="true" hidden="@(File.ThumbnailPath is not null)">@IconFor(File.Type)</span>
-        <span class="nsfw-cover" hidden="@(!File.IsNsfw)">NSFW · tap to view</span>
+        @if (File.IsNsfw)
+        {
+            <span class="nsfw-cover">NSFW · tap to view</span>
+        }
     </a>
     <div class="file-card-body">
         <div class="chip-row"><span class="chip">@File.Type</span><span class="chip">@FormatBytes(File.OriginalSize)</span><span class="chip success" hidden="@(Savings == 0)">−@Savings%</span></div>
