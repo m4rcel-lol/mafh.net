@@ -119,7 +119,10 @@ public sealed partial class UploadsController(AppDbContext database, IFileStorag
             }
             results.Add(persistence.Result!);
         }
-        return Ok(results);
+        if (WantsJsonResponse()) return Ok(results);
+        return LocalRedirect(results.Count == 1
+            ? $"/f/{results[0].Slug}?uploaded=1"
+            : $"/dashboard?uploaded={results.Count}");
     }
 
     [HttpGet, AllowAnonymous]
@@ -176,10 +179,11 @@ public sealed partial class UploadsController(AppDbContext database, IFileStorag
     [HttpPost("{id:guid}/report"), ValidateAntiForgeryToken, EnableRateLimiting("reports")]
     public async Task<IActionResult> Report(Guid id, [FromForm, Required, MaxLength(64)] string reason, [FromForm, MaxLength(1000)] string? message, CancellationToken cancellationToken)
     {
-        if (!await database.Files.AnyAsync(x => x.Id == id && x.Visibility == FileVisibility.Public && !x.IsHidden, cancellationToken)) return NotFound();
+        var slug = await database.Files.Where(x => x.Id == id && x.Visibility == FileVisibility.Public && !x.IsHidden).Select(x => x.Slug).FirstOrDefaultAsync(cancellationToken);
+        if (slug is null) return NotFound();
         Guid? reporter = Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsed) ? parsed : null;
         database.Reports.Add(new Report { Id = Guid.NewGuid(), FileId = id, ReporterId = reporter, Reason = reason.Trim(), Message = CleanOptional(message, 1_000) });
-        await database.SaveChangesAsync(cancellationToken); return NoContent();
+        await database.SaveChangesAsync(cancellationToken); return LocalRedirect($"/f/{slug}?reported=1");
     }
 
     [HttpGet("{slug}/content"), AllowAnonymous, EnableRateLimiting("downloads")]
@@ -214,6 +218,9 @@ public sealed partial class UploadsController(AppDbContext database, IFileStorag
     }
 
     private bool CanManage(FileUpload file) => file.UploaderId.ToString() == User.FindFirstValue(ClaimTypes.NameIdentifier) || User.IsInRole(nameof(UserRole.Admin)) || User.IsInRole(nameof(UserRole.Owner));
+    private bool WantsJsonResponse() =>
+        string.Equals(Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase) ||
+        Request.Headers["Accept"].Any(value => value?.Contains("application/json", StringComparison.OrdinalIgnoreCase) == true);
     private void AddAdminAuditIfNeeded(FileUpload file, string action)
     {
         var actor = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
