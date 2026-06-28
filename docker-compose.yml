@@ -12,7 +12,7 @@ services:
     env_file: .env
     environment:
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Include Error Detail=false
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database="${POSTGRES_DB}";Username="${POSTGRES_USER}";Password="${POSTGRES_PASSWORD}";Include Error Detail=false
       ConnectionStrings__Redis: redis:6379,password=${REDIS_PASSWORD},abortConnect=false
       Uploads__RootPath: ${UPLOAD_DIR:-/data/uploads}
       Uploads__MaxFileSizeMb: ${MAX_UPLOAD_SIZE_MB:-512}
@@ -65,7 +65,7 @@ services:
     init: true
     env_file: .env
     environment:
-      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Include Error Detail=false
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database="${POSTGRES_DB}";Username="${POSTGRES_USER}";Password="${POSTGRES_PASSWORD}";Include Error Detail=false
       ConnectionStrings__Redis: redis:6379,password=${REDIS_PASSWORD},abortConnect=false
       Uploads__RootPath: ${UPLOAD_DIR:-/data/uploads}
       Uploads__MaxFileSizeMb: ${MAX_UPLOAD_SIZE_MB:-512}
