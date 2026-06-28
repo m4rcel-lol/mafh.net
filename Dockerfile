@@ -6,8 +6,13 @@ COPY src/M5FileHost.Core/M5FileHost.Core.csproj src/M5FileHost.Core/
 COPY src/M5FileHost.Infrastructure/M5FileHost.Infrastructure.csproj src/M5FileHost.Infrastructure/
 COPY src/M5FileHost.Web/M5FileHost.Web.csproj src/M5FileHost.Web/
 COPY src/M5FileHost.Worker/M5FileHost.Worker.csproj src/M5FileHost.Worker/
-RUN dotnet restore src/M5FileHost.Web/M5FileHost.Web.csproj && dotnet restore src/M5FileHost.Worker/M5FileHost.Worker.csproj
 COPY src ./src
+# Restore after copying the source so stale host bin/obj directories can never
+# replace the container-generated NuGet assets. .dockerignore still excludes
+# those directories to keep the build context small.
+RUN find src -type d \( -name bin -o -name obj \) -prune -exec rm -rf '{}' + \
+    && dotnet restore src/M5FileHost.Web/M5FileHost.Web.csproj \
+    && dotnet restore src/M5FileHost.Worker/M5FileHost.Worker.csproj
 RUN dotnet publish src/M5FileHost.Web/M5FileHost.Web.csproj -c Release --no-restore -o /out/web /p:UseAppHost=false \
     && dotnet publish src/M5FileHost.Worker/M5FileHost.Worker.csproj -c Release --no-restore -o /out/worker /p:UseAppHost=false
 
