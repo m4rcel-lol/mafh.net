@@ -11,18 +11,18 @@
         </nav>
     </header>
     <aside class="nav-rail" aria-label="Primary navigation">
-        <NavLink href="/" Match="NavLinkMatch.All"><span>⌂</span><small>Home</small></NavLink>
-        <NavLink href="/uploads"><span>◫</span><small>Browse</small></NavLink>
+        <NavLink href="/" Match="NavLinkMatch.All"><span class="emoji-icon" aria-hidden="true">🏠</span><small>Home</small></NavLink>
+        <NavLink href="/uploads"><span class="emoji-icon" aria-hidden="true">🗂️</span><small>Browse</small></NavLink>
         <AuthorizeView><Authorized>
-            <NavLink href="/upload" class="rail-fab"><span>＋</span><small>Upload</small></NavLink>
-            <NavLink href="/dashboard"><span>◉</span><small>Dashboard</small></NavLink>
-            <AuthorizeView Policy="Moderator"><Authorized Context="adminState"><NavLink href="/admin"><span>⚙</span><small>Admin</small></NavLink></Authorized></AuthorizeView>
+            <NavLink href="/upload" class="rail-fab"><span class="emoji-icon" aria-hidden="true">📤</span><small>Upload</small></NavLink>
+            <NavLink href="/dashboard"><span class="emoji-icon" aria-hidden="true">📊</span><small>Dashboard</small></NavLink>
+            <AuthorizeView Policy="Moderator"><Authorized Context="adminState"><NavLink href="/admin"><span class="emoji-icon" aria-hidden="true">🛠️</span><small>Admin</small></NavLink></Authorized></AuthorizeView>
         </Authorized></AuthorizeView>
     </aside>
     <main class="content">@Body</main>
     <nav class="bottom-nav" aria-label="Mobile navigation">
-        <NavLink href="/" Match="NavLinkMatch.All"><span>⌂</span><small>Home</small></NavLink>
-        <NavLink href="/uploads"><span>◫</span><small>Browse</small></NavLink>
-        <AuthorizeView><Authorized><NavLink href="/upload"><span>＋</span><small>Upload</small></NavLink><NavLink href="/dashboard"><span>◉</span><small>You</small></NavLink></Authorized></AuthorizeView>
+        <NavLink href="/" Match="NavLinkMatch.All"><span class="emoji-icon" aria-hidden="true">🏠</span><small>Home</small></NavLink>
+        <NavLink href="/uploads"><span class="emoji-icon" aria-hidden="true">🗂️</span><small>Browse</small></NavLink>
+        <AuthorizeView><Authorized><NavLink href="/upload"><span class="emoji-icon" aria-hidden="true">📤</span><small>Upload</small></NavLink><NavLink href="/dashboard"><span class="emoji-icon" aria-hidden="true">📊</span><small>You</small></NavLink></Authorized></AuthorizeView>
     </nav>
 </div>

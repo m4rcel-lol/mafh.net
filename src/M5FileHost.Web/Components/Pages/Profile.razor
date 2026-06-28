@@ -14,7 +14,7 @@
         </div>
     </div>
 </section>
-<div class="center-state" hidden="@_found"><span class="state-icon">◎</span><h1>Profile unavailable</h1><p>This user is private or does not exist.</p></div>
+<div class="center-state" hidden="@_found"><span class="state-icon emoji-icon" aria-hidden="true">👤</span><h1>Profile unavailable</h1><p>This user is private or does not exist.</p></div>
 <section class="section-block profile-files" hidden="@(!_found)">
     <div class="section-heading inline compact"><div><span class="eyebrow">PUBLIC GALLERY</span><h2>@Username uploads</h2></div></div>
     <div class="file-grid browse">
@@ -23,7 +23,7 @@
             <FileCard File="file" />
         }
     </div>
-    <div class="empty" hidden="@(_files.Count != 0)"><span>◇</span><h3>No public uploads</h3></div>
+    <div class="empty" hidden="@(_files.Count != 0)"><span class="emoji-icon" aria-hidden="true">📂</span><h3>No public uploads</h3></div>
 </section>
 @code {
     [Parameter] public string Username { get; set; } = "";

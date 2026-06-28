@@ -2,34 +2,24 @@
 @inject AppDbContext Database
 
 <PageTitle>m5rcel's awesome file hoster</PageTitle>
-<section class="hero">
+<section class="hero minimal-hero">
     <div class="hero-copy reveal">
-        <span class="eyebrow">PRIVATE FILE HOSTING</span>
-        <h1>Store and share files <span>on your own terms.</span></h1>
-        <p>A straightforward home for uploads, previews and private links. Your files stay on your server.</p>
+        <span class="eyebrow">SELF-HOSTED FILES</span>
+        <h1>Files, kept simple.</h1>
+        <p>Upload, share and manage files without sending them to someone else's storage.</p>
         <div class="hero-actions">
-            <AuthorizeView><Authorized><a class="button filled large" href="/dashboard">Open dashboard <span>→</span></a></Authorized><NotAuthorized><a class="button filled large" href="/register">Create account <span>→</span></a></NotAuthorized></AuthorizeView>
+            <AuthorizeView><Authorized><a class="button filled large" href="/dashboard">Open dashboard</a></Authorized><NotAuthorized><a class="button filled large" href="/register">Create account</a></NotAuthorized></AuthorizeView>
             <a class="button tonal large" href="/uploads">Browse uploads</a>
         </div>
-        <div class="trust-row"><span>Stored locally</span><span>Background processing</span><span>Access controls</span></div>
-    </div>
-    <div class="upload-mock reveal delay-one" aria-hidden="true">
-        <div class="mock-top"><i></i><i></i><i></i><span>files.index.sarl/upload</span></div>
-        <div class="mock-drop"><span class="upload-orb">↑</span><strong>Drop files to upload</strong><small>images, video, archives and more</small></div>
-        <div class="mock-file"><span>IMG</span><div><strong>photo.png</strong><div class="progress"><i></i></div></div><b>72%</b></div>
-        <div class="mock-file"><span>VID</span><div><strong>clip.mp4</strong><small>Optimized · Ready</small></div><b class="done">✓</b></div>
+        <div class="trust-row"><span>Local storage</span><span>Private links</span><span>Automatic processing</span></div>
     </div>
 </section>
 
-<section class="section-block">
-    <div class="section-heading"><span class="eyebrow">WHAT'S INCLUDED</span><h2>The essentials, handled.</h2><p>Useful file hosting features without adding another external storage provider.</p></div>
+<section class="section-block compact-features">
     <div class="feature-grid">
-        <article class="feature-card primary"><span>01</span><h3>Local storage</h3><p>Files remain on your filesystem, with no external object-storage dependency.</p></article>
-        <article class="feature-card secondary"><span>02</span><h3>Media optimization</h3><p>Images, GIFs, video and audio are processed automatically in the background.</p></article>
-        <article class="feature-card tertiary"><span>03</span><h3>Useful previews</h3><p>Preview supported media, inspect archive metadata and download other formats safely.</p></article>
-        <article class="feature-card warm"><span>04</span><h3>Flexible sharing</h3><p>Publish files, create unlisted links or keep uploads private to your account.</p></article>
-        <article class="feature-card cool"><span>05</span><h3>Moderation tools</h3><p>Reports, content controls, roles, audit trails and storage insight are built in.</p></article>
-        <article class="feature-card dark"><span>06</span><h3>Durable processing</h3><p>Streaming uploads and recoverable background jobs keep large files manageable.</p></article>
+        <article class="feature-card"><span class="emoji-icon" aria-hidden="true">📁</span><h3>Stored here</h3><p>Your files stay on this server.</p></article>
+        <article class="feature-card"><span class="emoji-icon" aria-hidden="true">⚙️</span><h3>Processed for you</h3><p>Media is optimized in the background.</p></article>
+        <article class="feature-card"><span class="emoji-icon" aria-hidden="true">🔗</span><h3>Shared your way</h3><p>Choose public, unlisted or private access.</p></article>
     </div>
 </section>
 
@@ -46,8 +36,7 @@
         </div>
 </section>
 
-<section class="cta-panel"><span class="cta-icon">→</span><div><h2>Ready to upload?</h2><p>Keep storage, processing and access under your control.</p></div><AuthorizeView><Authorized><a class="button filled inverse" href="/upload">Upload files</a></Authorized><NotAuthorized><a class="button filled inverse" href="/register">Create account</a></NotAuthorized></AuthorizeView></section>
-<footer class="footer"><strong>m5rcel's awesome file hoster</strong><span>Fresh files, served locally.</span><nav><a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/rules">Rules</a><a href="/dmca">DMCA</a></nav></footer>
+<footer class="footer"><strong>m5rcel's awesome file hoster</strong><span>Files served locally.</span><nav><a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/rules">Rules</a><a href="/dmca">DMCA</a></nav></footer>
 
 @code {
     private List<FileUpload> _recent = [];
