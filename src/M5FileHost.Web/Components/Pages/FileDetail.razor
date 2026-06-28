@@ -8,7 +8,10 @@
 <div class="detail-layout" hidden="@(!_found)">
     <section class="preview-panel @(_file.IsNsfw ? "nsfw" : "")">
         <input id="reveal-nsfw" class="reveal-toggle" type="checkbox" />
-        <label class="nsfw-gate" for="reveal-nsfw" hidden="@(!_file.IsNsfw)"><span>18+</span><h2>Sensitive content</h2><p>This preview is marked NSFW. Tap to reveal.</p></label>
+        @if (_file.IsNsfw)
+        {
+            <label class="nsfw-gate" for="reveal-nsfw"><span>18+</span><h2>Sensitive content</h2><p>This preview is marked NSFW. Tap to reveal.</p></label>
+        }
         <div class="media-wrap">
             <img src="/api/uploads/@_file.Slug/content" alt="@Title" hidden="@(!IsImage)" />
             <video src="/api/uploads/@_file.Slug/content" controls preload="metadata" hidden="@(!IsVideo)"></video>
@@ -18,7 +21,14 @@
         </div>
     </section>
     <aside class="detail-card">
-        <div class="chip-row"><span class="chip">@_file.Type</span><span class="chip danger" hidden="@(!_file.IsNsfw)">NSFW</span><span class="chip status @_file.ProcessingStatus.ToString().ToLowerInvariant()">@_file.ProcessingStatus</span></div>
+        <div class="chip-row">
+            <span class="chip">@_file.Type</span>
+            @if (_file.IsNsfw)
+            {
+                <span class="chip danger">NSFW</span>
+            }
+            <span class="chip status @_file.ProcessingStatus.ToString().ToLowerInvariant()">@_file.ProcessingStatus</span>
+        </div>
         <h1>@Title</h1><p class="description">@_file.Description</p>
         <a class="uploader" href="/u/@_file.Uploader.UserName"><span class="avatar">@UploaderInitial</span><div><small>Uploaded by</small><strong>&#64;@_file.Uploader.UserName</strong></div></a>
         <div class="detail-actions"><a class="button filled full" href="/api/uploads/@_file.Slug/content?download=true"><span class="emoji-icon" aria-hidden="true">⬇️</span> Download</a><button class="button tonal" type="button" data-copy="@AbsoluteUrl">Copy link</button></div>

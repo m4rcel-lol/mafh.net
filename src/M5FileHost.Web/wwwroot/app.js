@@ -249,11 +249,6 @@
     return type.startsWith('image/') ? '🖼️' : type.startsWith('video/') ? '🎬' : type.startsWith('audio/') ? '🎵' : '📎';
   }
 
+  document.addEventListener('m5:enhance', enhance);
   enhance();
-  if (window.Blazor) {
-    Blazor.addEventListener('enhancedload', enhance);
-    Blazor.start().catch(error => console.error('Blazor failed to start.', error));
-  } else {
-    document.addEventListener('DOMContentLoaded', enhance);
-  }
 })();
