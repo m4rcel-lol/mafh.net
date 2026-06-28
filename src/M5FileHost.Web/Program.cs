@@ -3,7 +3,7 @@ using System.Threading.RateLimiting;
 using M5FileHost.Core;
 using M5FileHost.Infrastructure;
 using M5FileHost.Web;
-using M5FileHost.Web.Components;
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
@@ -38,7 +38,7 @@ builder.Services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, AppClai
 builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme).AddIdentityCookies();
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    options.Cookie.Name = builder.Environment.IsDevelopment() ? "m5filehost-dev" : "__Host-m5filehost";
+    options.Cookie.Name = "__Host-m5filehost";
     options.Cookie.HttpOnly = true;
     options.Cookie.SameSite = SameSiteMode.Lax;
     options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
@@ -46,6 +46,25 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/forbidden";
     options.SlidingExpiration = true;
     options.ExpireTimeSpan = TimeSpan.FromDays(14);
+    // The SPA expects JSON status codes, not the 302 redirects to /login and
+    // /forbidden that the cookie handler emits by default. Return 401/403 for
+    // API/XHR requests and keep redirects for any direct browser navigation.
+    options.Events.OnRedirectToLogin = context =>
+    {
+        if (context.Request.Path.StartsWithSegments("/api") || context.Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        else
+            context.Response.Redirect(context.RedirectUri);
+        return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        if (context.Request.Path.StartsWithSegments("/api") || context.Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        else
+            context.Response.Redirect(context.RedirectUri);
+        return Task.CompletedTask;
+    };
 });
 builder.Services.Configure<SecurityStampValidatorOptions>(options => options.ValidationInterval = TimeSpan.FromMinutes(1));
 builder.Services.AddAuthorizationBuilder()
@@ -53,9 +72,10 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy("Admin", policy => policy.RequireRole(nameof(UserRole.Admin), nameof(UserRole.Owner)))
     .AddPolicy("Owner", policy => policy.RequireRole(nameof(UserRole.Owner)));
 builder.Services.AddAntiforgery(options => options.HeaderName = "X-CSRF-TOKEN");
+// AddControllersWithViews (rather than AddControllers) registers the MVC
+// antiforgery filter services that the [ValidateAntiForgeryToken] attributes
+// depend on; these previously came in via the now-removed Razor components.
 builder.Services.AddControllersWithViews();
-builder.Services.AddRazorComponents().AddInteractiveServerComponents();
-builder.Services.AddCascadingAuthenticationState();
 builder.Services.Configure<FormOptions>(options =>
 {
     options.MemoryBufferThreshold = 64 * 1024;
@@ -87,7 +107,7 @@ app.Use(async (context, next) =>
     context.Response.Headers.XContentTypeOptions = "nosniff";
     context.Response.Headers.XFrameOptions = "DENY";
     context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
-    context.Response.Headers.ContentSecurityPolicy = "default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' ws: wss:; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
+    context.Response.Headers.ContentSecurityPolicy = "default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self'; connect-src 'self'; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
     context.Response.Headers.Append("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()");
     await next();
 });
@@ -99,7 +119,27 @@ app.UseAuthorization();
 app.UseAntiforgery();
 app.MapControllers();
 app.MapHealthChecks("/health").AllowAnonymous();
-app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
+
+// Serve the React SPA for any non-API route. The index.html is rewritten on
+// each request to embed a fresh antiforgery request token in its <meta> tag,
+// which the client reads and replays as the X-CSRF-TOKEN header on mutations.
+var indexHtmlPath = Path.Combine(app.Environment.WebRootPath ?? "wwwroot", "index.html");
+string? indexHtmlTemplate = null;
+app.MapFallback(async (HttpContext context, IAntiforgery antiforgery) =>
+{
+    if (context.Request.Path.StartsWithSegments("/api") || context.Request.Path.StartsWithSegments("/health"))
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        return;
+    }
+    indexHtmlTemplate ??= await File.ReadAllTextAsync(indexHtmlPath, context.RequestAborted);
+    var requestToken = antiforgery.GetAndStoreTokens(context).RequestToken ?? "";
+    var meta = $"<meta name=\"csrf-token\" content=\"{System.Net.WebUtility.HtmlEncode(requestToken)}\">";
+    var html = System.Text.RegularExpressions.Regex.Replace(indexHtmlTemplate, "<meta name=\"csrf-token\"[^>]*>", _ => meta);
+    context.Response.ContentType = "text/html; charset=utf-8";
+    context.Response.Headers.CacheControl = "no-store";
+    await context.Response.WriteAsync(html, context.RequestAborted);
+});
 
 if (args.Contains("seed-owner", StringComparer.OrdinalIgnoreCase))
 {

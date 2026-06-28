@@ -1,6 +1,6 @@
 # m5rcel's awesome file hoster
 
-A self-hosted, Material You-inspired file hosting platform built entirely with .NET 10, ASP.NET Core, Razor components, PostgreSQL, Redis, and local filesystem storage.
+A self-hosted, Material You-inspired file hosting platform built with .NET 10, ASP.NET Core (JSON API + Identity), a React single-page app, PostgreSQL, Redis, and local filesystem storage.
 
 **Production URL:** `https://files.index.sarl`  
 **Tagline:** Upload it. Compress it. Share it.
@@ -34,13 +34,17 @@ Add deployment screenshots here after branding and production content are config
 src/
 ├── M5FileHost.Core/            domain entities, enums, options, contracts
 ├── M5FileHost.Infrastructure/  EF Core, PostgreSQL, Redis, storage, scanning, processing
-├── M5FileHost.Web/             ASP.NET Core host, Razor UI, Identity, APIs
+├── M5FileHost.Web/             ASP.NET Core host, JSON API, Identity, React SPA (prebuilt in wwwroot)
 └── M5FileHost.Worker/          durable background processing and recovery
 tests/
 └── M5FileHost.Tests/           signature detection and filesystem safety tests
 ```
 
 PostgreSQL stores metadata and Identity records. Redis stores processing messages. File bytes never enter PostgreSQL or external object storage.
+
+## Frontend
+
+The web UI is a React single-page app served as static files from `src/M5FileHost.Web/wwwroot` (`index.html` plus hashed `assets/`). ASP.NET Core serves it through a fallback route that injects a per-request antiforgery token into the page's `<meta name="csrf-token">`; the SPA replays that value as the `X-CSRF-TOKEN` header on mutating requests and relies on the HttpOnly Identity cookie for authentication. The compiled assets are committed to the repository, so no Node toolchain is needed to build or deploy the server.
 
 ## Requirements
 
@@ -219,8 +223,6 @@ Back up before upgrades. Migrations are forward-only in production; rollback mea
 ## Troubleshooting
 
 - **Docker sends a very large build context or publish fails with `NETSDK1064`:** confirm `.dockerignore` exists on the server, remove any copied `bin`/`obj` directories, then rebuild with `docker compose build --no-cache app worker`.
-- **App tries PostgreSQL on a port other than `5432`:** pull the latest Compose file and recreate `app` and `worker`. Database credentials are quoted so semicolons in `.env` values cannot override connection options.
-- **App logs `libgssapi_krb5.so.2` or antiforgery filter errors:** pull the latest code and rebuild both application images with `docker compose up -d --build`.
 - **App is unhealthy:** inspect `docker compose logs app postgres`; health checks require a live database.
 - **Worker jobs stay pending:** inspect `docker compose logs worker redis`; pending database rows are republished every five minutes.
 - **Upload permission denied:** `sudo chown -R 1654:1654 data/uploads data/keys`.

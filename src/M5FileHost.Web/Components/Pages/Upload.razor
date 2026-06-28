@@ -1,9 +1,0 @@
-@page "/upload"
-@attribute [Authorize]
-<PageTitle>Upload · m5 file hoster</PageTitle>
-<div class="page-header centered"><div><span class="eyebrow">UPLOAD</span><h1>Add files</h1><p>Choose files, set access and upload.</p></div></div>
-<form id="upload-form" class="upload-surface" action="/api/uploads" method="post" enctype="multipart/form-data"><AntiforgeryToken />
-    <label class="drop-zone" for="file-picker"><input id="file-picker" name="Files" type="file" multiple required /><span class="upload-orb large emoji-icon" aria-hidden="true">📤</span><h2>Choose files</h2><p>or drag and drop them here</p><small>Up to 512 MB each · maximum 20 files</small></label>
-    <div id="upload-queue" class="upload-queue" hidden></div>
-    <section class="upload-details"><h2>Options</h2><div class="upload-options"><label><span>Visibility</span><select name="Visibility"><option>Public</option><option>Unlisted</option><option>Private</option></select></label><label><span>Tags <small>optional, comma separated</small></span><input name="Tags" maxlength="350" placeholder="wallpaper, release" /></label></div><label class="check safety"><input type="checkbox" name="IsNsfw" value="true" /><span><strong>Mark as NSFW</strong><small>Previews will be blurred and hidden from safe browsing.</small></span></label><button class="button filled large full" type="submit">Upload files <span class="emoji-icon" aria-hidden="true">📤</span></button><div id="upload-result" role="status"></div></section>
-</form>
