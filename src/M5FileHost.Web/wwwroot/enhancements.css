@@ -82,11 +82,13 @@ h1[tabindex="-1"]:focus { outline: none; }
   background: currentColor;
   opacity: .22;
   animation: ripple var(--dur-long) var(--ease-emphasized);
-  z-index: 0;
+  z-index: -1;
 }
 @keyframes ripple { to { transform: scale(2.4); opacity: 0; } }
 /* Keep label/content above the ripple */
 .button > *, .nav-rail a > *, .bottom-nav a > *, .quick > a > *, .file-list > a > * { position: relative; z-index: 1; }
+.button, .icon-button, .nav-rail a, .bottom-nav a, .quick > a, .file-list > a,
+.chip-check, .rail-fab, [data-ripple] { isolation: isolate; overflow: hidden; }
 
 /* --------------------------------------------------------------- top bar */
 .topbar {

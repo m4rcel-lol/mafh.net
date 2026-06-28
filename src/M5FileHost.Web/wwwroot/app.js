@@ -4,10 +4,15 @@
   document.addEventListener('click', async event => {
     const copy = event.target.closest('[data-copy]');
     if (copy) {
-      await navigator.clipboard.writeText(copy.dataset.copy);
-      const old = copy.textContent;
-      copy.textContent = 'Copied ✓';
-      setTimeout(() => copy.textContent = old, 1600);
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable.');
+        await navigator.clipboard.writeText(copy.dataset.copy);
+        const old = copy.textContent;
+        copy.textContent = 'Copied ✓';
+        setTimeout(() => copy.textContent = old, 1600);
+      } catch {
+        toast('Could not copy the link. Copy it from the address bar instead.', true);
+      }
     }
 
     const remove = event.target.closest('[data-api-delete]');
@@ -100,8 +105,14 @@
       event.preventDefault();
       drop.classList.remove('dragging');
       if (event.dataTransfer?.files.length) {
-        picker.files = event.dataTransfer.files;
-        showFiles();
+        try {
+          const transfer = new DataTransfer();
+          [...event.dataTransfer.files].forEach(file => transfer.items.add(file));
+          picker.files = transfer.files;
+          showFiles();
+        } catch {
+          result.innerHTML = '<div class="notice error">This browser cannot add dropped files. Use Choose files instead.</div>';
+        }
       }
     });
 
