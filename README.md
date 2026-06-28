@@ -220,6 +220,7 @@ Back up before upgrades. Migrations are forward-only in production; rollback mea
 
 - **Docker sends a very large build context or publish fails with `NETSDK1064`:** confirm `.dockerignore` exists on the server, remove any copied `bin`/`obj` directories, then rebuild with `docker compose build --no-cache app worker`.
 - **App tries PostgreSQL on a port other than `5432`:** pull the latest Compose file and recreate `app` and `worker`. Database credentials are quoted so semicolons in `.env` values cannot override connection options.
+- **App logs `libgssapi_krb5.so.2` or antiforgery filter errors:** pull the latest code and rebuild both application images with `docker compose up -d --build`.
 - **App is unhealthy:** inspect `docker compose logs app postgres`; health checks require a live database.
 - **Worker jobs stay pending:** inspect `docker compose logs worker redis`; pending database rows are republished every five minutes.
 - **Upload permission denied:** `sudo chown -R 1654:1654 data/uploads data/keys`.

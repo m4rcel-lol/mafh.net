@@ -1,10 +1,5 @@
 (() => {
-  const root = document.documentElement;
-  const saved = localStorage.getItem('m5-theme');
-  root.dataset.theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
   document.addEventListener('click', async event => {
-    const theme = event.target.closest('[data-theme-toggle]');
-    if (theme) { root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('m5-theme', root.dataset.theme); }
     const copy = event.target.closest('[data-copy]');
     if (copy) { await navigator.clipboard.writeText(copy.dataset.copy); const old = copy.textContent; copy.textContent = 'Copied ✓'; setTimeout(() => copy.textContent = old, 1600); }
     const remove = event.target.closest('[data-api-delete]');

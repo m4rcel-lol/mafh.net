@@ -4,7 +4,6 @@
     <header class="topbar">
         <a class="brand" href="/"><span class="brand-mark">m5</span><span>m5rcel's awesome file hoster</span></a>
         <nav class="top-actions">
-            <button class="icon-button" type="button" data-theme-toggle aria-label="Toggle color theme">◐</button>
             <AuthorizeView>
                 <Authorized><a class="avatar" href="/settings" aria-label="Account">@context.User.Identity?.Name?.Substring(0, 1).ToUpperInvariant()</a></Authorized>
                 <NotAuthorized><a class="button tonal compact" href="/login">Sign in</a></NotAuthorized>

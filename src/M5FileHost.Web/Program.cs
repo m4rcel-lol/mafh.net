@@ -53,7 +53,7 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy("Admin", policy => policy.RequireRole(nameof(UserRole.Admin), nameof(UserRole.Owner)))
     .AddPolicy("Owner", policy => policy.RequireRole(nameof(UserRole.Owner)));
 builder.Services.AddAntiforgery(options => options.HeaderName = "X-CSRF-TOKEN");
-builder.Services.AddControllers();
+builder.Services.AddControllersWithViews();
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.Configure<FormOptions>(options =>
