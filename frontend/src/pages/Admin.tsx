@@ -136,12 +136,14 @@ export default function Admin() {
 
   if (isLoading || !user || user.role !== 'Admin') return null;
 
+  // Absolute paths: Admin is mounted under a splat route (admin/*), so relative
+  // tab links would resolve against the current URL and keep appending segments.
   const tabs = [
-    { to: '.', label: 'Overview', exact: true },
-    { to: 'users', label: 'Users' },
-    { to: 'files', label: 'Files' },
-    { to: 'reports', label: 'Reports' },
-    { to: 'audit', label: 'Audit Log' },
+    { to: '/admin', label: 'Overview', end: true },
+    { to: '/admin/users', label: 'Users' },
+    { to: '/admin/files', label: 'Files' },
+    { to: '/admin/reports', label: 'Reports' },
+    { to: '/admin/audit', label: 'Audit Log' },
   ];
 
   return (
@@ -158,7 +160,7 @@ export default function Admin() {
           <NavLink
             key={tab.label}
             to={tab.to}
-            end={tab.exact}
+            end={tab.end}
             className={({ isActive }) => cn(
               "px-4 py-2 rounded-t-lg font-medium whitespace-nowrap transition-colors",
               isActive ? "text-m3-primary border-b-2 border-m3-primary" : "text-m3-on-surface-variant hover:text-m3-on-surface hover:bg-m3-surface-container"
