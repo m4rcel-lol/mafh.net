@@ -17,7 +17,7 @@ RUN dotnet publish src/M5FileHost.Web/M5FileHost.Web.csproj -c Release --no-rest
     && dotnet publish src/M5FileHost.Worker/M5FileHost.Worker.csproj -c Release --no-restore -o /out/worker /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS runtime-base
-RUN apk add --no-cache ffmpeg gifsicle 7zip libgomp \
+RUN apk add --no-cache ffmpeg gifsicle 7zip krb5-libs libgomp \
     && mkdir -p /data/uploads /data/keys \
     && chown -R "$APP_UID:$APP_UID" /data
 WORKDIR /app
