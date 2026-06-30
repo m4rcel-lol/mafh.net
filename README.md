@@ -44,7 +44,19 @@ PostgreSQL stores metadata and Identity records. Redis stores processing message
 
 ## Frontend
 
-The web UI is a React single-page app served as static files from `src/M5FileHost.Web/wwwroot` (`index.html` plus hashed `assets/`). ASP.NET Core serves it through a fallback route that injects a per-request antiforgery token into the page's `<meta name="csrf-token">`; the SPA replays that value as the `X-CSRF-TOKEN` header on mutating requests and relies on the HttpOnly Identity cookie for authentication. The compiled assets are committed to the repository, so no Node toolchain is needed to build or deploy the server.
+The web UI is a React single-page app. Its source lives in [`frontend/`](frontend/) and the compiled output is committed to `src/M5FileHost.Web/wwwroot` (`index.html` plus hashed `assets/`), so **no Node toolchain is needed to build or deploy the server** — the Docker image just serves the prebuilt assets.
+
+ASP.NET Core serves the SPA through a fallback route that injects a per-request antiforgery token into the page's `<meta name="csrf-token">`; the SPA replays that value as the `X-CSRF-TOKEN` header on mutating requests and relies on the HttpOnly Identity cookie for authentication.
+
+To change the UI, edit `frontend/` and rebuild the committed assets:
+
+```bash
+cd frontend
+npm install
+npm run build           # outputs to frontend/dist
+rm -rf ../src/M5FileHost.Web/wwwroot/assets
+cp -R dist/. ../src/M5FileHost.Web/wwwroot/
+```
 
 ## Requirements
 
