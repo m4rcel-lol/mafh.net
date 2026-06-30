@@ -3,6 +3,7 @@ import { Routes, Route, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../api/client';
 import { Button } from '../components/Button';
+import { VerifiedBadge } from '../components/VerifiedBadge';
 import { cn } from '../lib/utils';
 
 function AdminOverview() {
@@ -45,9 +46,16 @@ function AdminUsers() {
     } catch (e: any) { alert(e.message); }
   };
 
+  const handleVerify = async (id: string, current: boolean) => {
+    try {
+      await api.verifyUser(id, !current);
+      setUsers(users.map(u => u.id === id ? { ...u, isVerified: !current } : u));
+    } catch (e: any) { alert(e.message); }
+  };
+
   return (
     <div className="bg-m3-surface-container rounded-3xl p-6 overflow-x-auto">
-      <table className="w-full text-left border-collapse min-w-[600px]">
+      <table className="w-full text-left border-collapse min-w-[640px]">
         <thead>
           <tr className="border-b border-m3-outline-variant/30 text-sm">
             <th className="py-3">User</th>
@@ -59,7 +67,9 @@ function AdminUsers() {
         <tbody className="divide-y divide-m3-outline-variant/10">
           {users.map(u => (
             <tr key={u.id}>
-              <td className="py-4 font-medium">{u.username}</td>
+              <td className="py-4 font-medium">
+                <span className="inline-flex items-center gap-1.5">{u.username} {u.isVerified && <VerifiedBadge className="h-4 w-4" />}</span>
+              </td>
               <td className="py-4 text-sm">{u.role}</td>
               <td className="py-4">
                 {u.isBanned ? (
@@ -68,7 +78,10 @@ function AdminUsers() {
                   <span className="bg-m3-secondary-container text-m3-on-secondary-container text-xs px-2 py-1 rounded-md">Active</span>
                 )}
               </td>
-              <td className="py-4 text-right">
+              <td className="py-4 text-right whitespace-nowrap">
+                <Button variant="text" size="sm" onClick={() => handleVerify(u.id, u.isVerified)}>
+                  {u.isVerified ? 'Unverify' : 'Verify'}
+                </Button>
                 <Button variant="text" size="sm" onClick={() => handleSuspend(u.id, u.isBanned)}>
                   {u.isBanned ? 'Unsuspend' : 'Suspend'}
                 </Button>

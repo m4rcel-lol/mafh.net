@@ -74,7 +74,7 @@ public sealed class AdminController(AppDbContext database, IFileStorage storage,
         if (!string.IsNullOrWhiteSpace(search)) { var t = search.Trim(); query = query.Where(x => EF.Functions.ILike(x.UserName!, $"%{t}%") || EF.Functions.ILike(x.Email!, $"%{t}%")); }
         var total = await query.CountAsync(cancellationToken);
         var items = await query.OrderByDescending(x => x.CreatedAt).Skip((page - 1) * pageSize).Take(pageSize)
-            .Select(x => new { x.Id, username = x.UserName, x.Email, x.DisplayName, role = x.Role.ToString(), x.IsBanned, x.CreatedAt, fileCount = x.Files.Count, storage = x.Files.Sum(f => (long?)f.OriginalSize) ?? 0 })
+            .Select(x => new { x.Id, username = x.UserName, x.Email, x.DisplayName, role = x.Role.ToString(), x.IsBanned, x.IsVerified, x.CreatedAt, fileCount = x.Files.Count, storage = x.Files.Sum(f => (long?)f.OriginalSize) ?? 0 })
             .ToListAsync(cancellationToken);
         return Ok(new { items, totalCount = total, page, pageSize, totalPages = ApiMap.TotalPages(total, pageSize) });
     }
@@ -102,6 +102,18 @@ public sealed class AdminController(AppDbContext database, IFileStorage storage,
         var result = await users.UpdateAsync(user); if (!result.Succeeded) return BadRequest(new { message = string.Join(" ", result.Errors.Select(x => x.Description)) });
         await users.UpdateSecurityStampAsync(user);
         Audit(request.IsBanned ? "user.suspend" : "user.unsuspend", "ApplicationUser", id.ToString(), new { request.IsBanned });
+        await database.SaveChangesAsync(cancellationToken); return NoContent();
+    }
+
+    // Verification is a staff action: any moderator+ (the controller policy) can
+    // grant or revoke the verified badge.
+    [HttpPatch("users/{id:guid}/verify"), ValidateAntiForgeryToken]
+    public async Task<IActionResult> VerifyUser(Guid id, [FromBody] VerifyRequest request, CancellationToken cancellationToken)
+    {
+        var user = await users.FindByIdAsync(id.ToString()); if (user is null) return NotFound();
+        user.IsVerified = request.IsVerified; user.UpdatedAt = DateTimeOffset.UtcNow;
+        var result = await users.UpdateAsync(user); if (!result.Succeeded) return BadRequest(new { message = string.Join(" ", result.Errors.Select(x => x.Description)) });
+        Audit(request.IsVerified ? "user.verify" : "user.unverify", "ApplicationUser", id.ToString(), new { request.IsVerified });
         await database.SaveChangesAsync(cancellationToken); return NoContent();
     }
 
@@ -158,4 +170,5 @@ public sealed class AdminController(AppDbContext database, IFileStorage storage,
 public sealed record AdminFileUpdate(bool? IsHidden, bool? IsNsfw);
 public sealed record SetRoleRequest([Required] string Role);
 public sealed record SuspendRequest(bool IsBanned);
+public sealed record VerifyRequest(bool IsVerified);
 public sealed record ResolveReportRequest([Required] string Action);

@@ -24,6 +24,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
         {
             entity.Property(x => x.DisplayName).HasMaxLength(80);
             entity.Property(x => x.Bio).HasMaxLength(500);
+            entity.Property(x => x.Links).HasMaxLength(2000);
             entity.Property(x => x.Role).HasConversion<string>().HasMaxLength(16);
             entity.HasIndex(x => x.NormalizedEmail);
         });

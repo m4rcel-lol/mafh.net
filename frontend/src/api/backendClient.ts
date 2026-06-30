@@ -172,5 +172,6 @@ export const backendClient: ApiClient = {
   },
   updateUserRole: (id, role) => fetchApi(`/api/admin/users/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role }) }),
   suspendUser: (id, isBanned) => fetchApi(`/api/admin/users/${id}/suspend`, { method: 'PATCH', body: JSON.stringify({ isBanned }) }),
+  verifyUser: (id, isVerified) => fetchApi(`/api/admin/users/${id}/verify`, { method: 'PATCH', body: JSON.stringify({ isVerified }) }),
   resolveReport: (id, action) => fetchApi(`/api/admin/reports/${id}/resolve`, { method: 'POST', body: JSON.stringify({ action }) })
 };

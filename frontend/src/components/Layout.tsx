@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Button } from './Button';
 import { cn } from '../lib/utils';
 import { isMockMode } from '../api/client';
+import { VerifiedBadge } from './VerifiedBadge';
 
 const UserMenu: React.FC<{ menuPosition: string }> = ({ menuPosition }) => {
   const { user, logout } = useAuth();
@@ -26,8 +27,6 @@ const UserMenu: React.FC<{ menuPosition: string }> = ({ menuPosition }) => {
     await logout();
     navigate('/');
   };
-
-  const go = (path: string) => { setOpen(false); navigate(path); };
 
   const Avatar = ({ className }: { className?: string }) => (
     user.avatarUrl
@@ -61,23 +60,9 @@ const UserMenu: React.FC<{ menuPosition: string }> = ({ menuPosition }) => {
             </div>
             <div className="min-w-0">
               <p className="text-xs text-m3-on-surface-variant">Signed in as</p>
-              <p className="font-medium truncate">@{user.username}</p>
+              <p className="font-medium truncate flex items-center gap-1">@{user.username} {user.isVerified && <VerifiedBadge className="h-4 w-4" />}</p>
             </div>
           </div>
-
-          <div className="h-px bg-m3-outline-variant/30 my-1" />
-
-          <button onClick={() => go(`/u/${user.username}`)} role="menuitem" className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm hover:bg-m3-surface-container-highest transition-colors">
-            <span className="material-symbols-outlined text-lg">account_circle</span> Profile
-          </button>
-          <button onClick={() => go('/settings')} role="menuitem" className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm hover:bg-m3-surface-container-highest transition-colors">
-            <span className="material-symbols-outlined text-lg">settings</span> Settings
-          </button>
-          {user.role === 'Admin' && (
-            <button onClick={() => go('/admin')} role="menuitem" className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm hover:bg-m3-surface-container-highest transition-colors">
-              <span className="material-symbols-outlined text-lg">admin_panel_settings</span> Admin
-            </button>
-          )}
 
           <div className="h-px bg-m3-outline-variant/30 my-1" />
 

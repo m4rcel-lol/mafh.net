@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import { User, FileMetadata } from '../api/types';
 import { formatBytes } from '../lib/utils';
 import { Button } from '../components/Button';
+import { VerifiedBadge } from '../components/VerifiedBadge';
 
 export default function Profile() {
   const { username } = useParams<{ username: string }>();
@@ -57,20 +58,44 @@ export default function Profile() {
           {profileUser.avatarUrl ? (
             <img src={profileUser.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
           ) : (
-            <span className="font-bold text-m3-primary">{profileUser.username.charAt(0).toUpperCase()}</span>
+            <span className="font-bold text-m3-primary">{(profileUser.displayName || profileUser.username).charAt(0).toUpperCase()}</span>
           )}
         </div>
-        <div className="space-y-4">
+        <div className="space-y-4 min-w-0">
           <div>
-            <h1 className="text-3xl font-bold">@{profileUser.username}</h1>
-            <div className="flex items-center gap-2 mt-2 text-m3-on-surface-variant justify-center md:justify-start">
-               {profileUser.role === 'Admin' && (
-                 <span className="bg-m3-primary-container text-m3-on-primary-container text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-wider">
-                   Admin
-                 </span>
-               )}
-               <span>Joined recently</span>
+            <div className="flex items-center gap-2 justify-center md:justify-start">
+              <h1 className="text-3xl font-bold break-words">{profileUser.displayName || `@${profileUser.username}`}</h1>
+              {profileUser.isVerified && <VerifiedBadge className="h-6 w-6" />}
             </div>
+            <div className="flex items-center gap-2 mt-1 text-m3-on-surface-variant justify-center md:justify-start flex-wrap">
+              {profileUser.displayName && <span>@{profileUser.username}</span>}
+              {profileUser.role === 'Admin' && (
+                <span className="bg-m3-primary-container text-m3-on-primary-container text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-wider">
+                  Admin
+                </span>
+              )}
+            </div>
+
+            {profileUser.bio && (
+              <p className="mt-3 text-m3-on-surface-variant max-w-prose whitespace-pre-line">{profileUser.bio}</p>
+            )}
+
+            {profileUser.links && profileUser.links.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3 justify-center md:justify-start">
+                {profileUser.links.map((l, i) => (
+                  <a
+                    key={i}
+                    href={l.url}
+                    target="_blank"
+                    rel="noreferrer noopener nofollow"
+                    className="inline-flex items-center gap-1 bg-m3-surface-container-high px-3 py-1.5 rounded-full text-sm hover:bg-m3-surface-container-highest transition-colors max-w-full"
+                  >
+                    <span className="material-symbols-outlined text-[16px] shrink-0">link</span>
+                    <span className="truncate">{l.label}</span>
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
           <div className="flex gap-6 justify-center md:justify-start">
             <div>

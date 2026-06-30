@@ -1,9 +1,18 @@
+export interface ProfileLink {
+  label: string;
+  url: string;
+}
+
 export interface User {
   id: string;
   username: string;
+  displayName?: string;
   role: 'User' | 'Admin';
   isBanned: boolean;
+  isVerified: boolean;
   avatarUrl?: string;
+  bio?: string;
+  links: ProfileLink[];
   storageUsed: number;
   storageQuota: number;
   uploadCount: number;
@@ -67,5 +76,6 @@ export interface ApiClient {
   getAdminAuditLog(params: any): Promise<PaginatedResponse<any>>;
   updateUserRole(userId: string, role: string): Promise<void>;
   suspendUser(userId: string, isBanned: boolean): Promise<void>;
+  verifyUser(userId: string, isVerified: boolean): Promise<void>;
   resolveReport(reportId: string, action: string): Promise<void>;
 }

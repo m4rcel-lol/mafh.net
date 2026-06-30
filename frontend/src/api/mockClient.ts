@@ -4,9 +4,9 @@ const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 const QUOTA = 10 * 1024 * 1024 * 1024;
 
 let mockUsers: User[] = [
-  { id: '1', username: 'admin', role: 'Admin', isBanned: false, storageUsed: 1024 * 1024 * 500, storageQuota: QUOTA, uploadCount: 42, totalViews: 1050, totalDownloads: 412, nsfwPreference: true },
-  { id: '2', username: 'user1', role: 'User', isBanned: false, storageUsed: 1024 * 1024 * 50, storageQuota: QUOTA, uploadCount: 5, totalViews: 152, totalDownloads: 13, nsfwPreference: false },
-  { id: '3', username: 'banned_user', role: 'User', isBanned: true, storageUsed: 0, storageQuota: QUOTA, uploadCount: 0, totalViews: 0, totalDownloads: 0, nsfwPreference: false },
+  { id: '1', username: 'admin', displayName: 'Admin', role: 'Admin', isBanned: false, isVerified: true, bio: 'Keeping the lights on.', links: [{ label: 'Website', url: 'https://example.com' }], storageUsed: 1024 * 1024 * 500, storageQuota: QUOTA, uploadCount: 42, totalViews: 1050, totalDownloads: 412, nsfwPreference: true },
+  { id: '2', username: 'user1', displayName: 'User One', role: 'User', isBanned: false, isVerified: false, bio: '', links: [], storageUsed: 1024 * 1024 * 50, storageQuota: QUOTA, uploadCount: 5, totalViews: 152, totalDownloads: 13, nsfwPreference: false },
+  { id: '3', username: 'banned_user', displayName: undefined, role: 'User', isBanned: true, isVerified: false, bio: '', links: [], storageUsed: 0, storageQuota: QUOTA, uploadCount: 0, totalViews: 0, totalDownloads: 0, nsfwPreference: false },
 ];
 
 let mockFiles: FileMetadata[] = [
@@ -21,7 +21,7 @@ export const mockClient: ApiClient = {
   async register(data) {
     await delay(800);
     if (data.username === 'admin') throw new Error('Username taken');
-    const newUser: User = { id: Math.random().toString(), username: data.username, role: 'User', isBanned: false, storageUsed: 0, storageQuota: QUOTA, uploadCount: 0, totalViews: 0, totalDownloads: 0, nsfwPreference: false };
+    const newUser: User = { id: Math.random().toString(), username: data.username, displayName: undefined, role: 'User', isBanned: false, isVerified: false, bio: '', links: [], storageUsed: 0, storageQuota: QUOTA, uploadCount: 0, totalViews: 0, totalDownloads: 0, nsfwPreference: false };
     mockUsers.push(newUser);
     currentUser = newUser;
   },
@@ -134,6 +134,11 @@ export const mockClient: ApiClient = {
     await delay(500);
     const u = mockUsers.find(u => u.id === id);
     if (u) u.isBanned = isBanned;
+  },
+  async verifyUser(id, isVerified) {
+    await delay(500);
+    const u = mockUsers.find(u => u.id === id);
+    if (u) u.isVerified = isVerified;
   },
   async resolveReport() { await delay(500); }
 };

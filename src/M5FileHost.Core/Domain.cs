@@ -14,6 +14,7 @@ public sealed class ApplicationUser : IdentityUser<Guid>
     public string? AvatarPath { get; set; }
     public string? BannerPath { get; set; }
     public string? Bio { get; set; }
+    public string? Links { get; set; }
     public UserRole Role { get; set; } = UserRole.User;
     public bool IsBanned { get; set; }
     public bool IsVerified { get; set; }

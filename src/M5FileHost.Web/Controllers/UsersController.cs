@@ -26,6 +26,7 @@ public sealed class UsersController(AppDbContext database, UserManager<Applicati
         var user = await users.GetUserAsync(User); if (user is null) return Unauthorized();
         if (request.DisplayName is not null) user.DisplayName = Clean(request.DisplayName, 80);
         if (request.Bio is not null) user.Bio = Clean(request.Bio, 500);
+        if (request.Links is not null) user.Links = ApiMap.NormalizeLinks(request.Links);
         if (request.NsfwPreference is not null) user.NsfwAllowed = request.NsfwPreference.Value;
         if (request.PublicProfile is not null) user.PublicProfile = request.PublicProfile.Value;
         user.UpdatedAt = DateTimeOffset.UtcNow;
@@ -72,5 +73,5 @@ public sealed class UsersController(AppDbContext database, UserManager<Applicati
     private static string? Clean(string? value, int max) { var clean = value?.Trim(); return string.IsNullOrEmpty(clean) ? null : clean[..Math.Min(clean.Length, max)]; }
 }
 
-public sealed record UpdateProfileRequest(string? DisplayName, string? Bio, bool? NsfwPreference, bool? PublicProfile);
+public sealed record UpdateProfileRequest(string? DisplayName, string? Bio, List<ProfileLink>? Links, bool? NsfwPreference, bool? PublicProfile);
 public sealed record ChangePasswordRequest([Required] string CurrentPassword, [Required, MinLength(12), MaxLength(128)] string NewPassword);
