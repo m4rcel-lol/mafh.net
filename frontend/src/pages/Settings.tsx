@@ -8,6 +8,7 @@ export default function Settings() {
   const [nsfwPref, setNsfwPref] = useState(user?.nsfwPreference ?? false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [avatarLoading, setAvatarLoading] = useState(false);
   const avatarInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleSave = async () => {
@@ -27,6 +28,8 @@ export default function Settings() {
   const handleAvatarSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setAvatarLoading(true);
+    setMessage('');
     try {
       await api.updateAvatar(file);
       await refreshUser();
@@ -34,6 +37,7 @@ export default function Settings() {
     } catch (err: any) {
       setMessage(err.message || 'Failed to update avatar.');
     } finally {
+      setAvatarLoading(false);
       if (avatarInputRef.current) avatarInputRef.current.value = '';
     }
   };
@@ -54,17 +58,24 @@ export default function Settings() {
         <section>
           <h2 className="text-xl font-bold mb-4">Profile</h2>
           <div className="flex items-center gap-6">
-            <div className="w-24 h-24 rounded-full bg-m3-surface-container-highest flex items-center justify-center text-4xl overflow-hidden shrink-0">
+            <div className="relative w-24 h-24 rounded-full bg-m3-surface-container-highest flex items-center justify-center text-4xl overflow-hidden shrink-0">
               {user.avatarUrl ? (
                 <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
                 <span className="font-bold text-m3-primary">{user.username.charAt(0).toUpperCase()}</span>
               )}
+              {avatarLoading && (
+                <div className="absolute inset-0 bg-black/55 flex items-center justify-center" aria-busy="true" aria-label="Uploading avatar">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-white border-t-transparent"></div>
+                </div>
+              )}
             </div>
             <div className="space-y-2">
               <p className="font-medium">@{user.username}</p>
-              <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarSelected} />
-              <Button variant="tonal" onClick={() => avatarInputRef.current?.click()} size="sm">Change Avatar</Button>
+              <input ref={avatarInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/avif" className="hidden" onChange={handleAvatarSelected} disabled={avatarLoading} />
+              <Button variant="tonal" onClick={() => avatarInputRef.current?.click()} size="sm" disabled={avatarLoading}>
+                {avatarLoading ? 'Uploading…' : 'Change Avatar'}
+              </Button>
             </div>
           </div>
         </section>

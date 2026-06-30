@@ -43,8 +43,10 @@ public static class ApiMap
     // super-admin and must unlock the admin UI, Moderator has no SPA surface.
     public static string Role(UserRole role) => role is UserRole.Admin or UserRole.Owner ? "Admin" : "User";
 
+    // The avatar path is stable, so include a version derived from the last
+    // update time to bust the browser cache when a new avatar is uploaded.
     public static string? AvatarUrl(ApplicationUser user) =>
-        user.AvatarPath is null ? null : $"/api/users/{user.UserName}/avatar";
+        user.AvatarPath is null ? null : $"/api/users/{user.UserName}/avatar?v={user.UpdatedAt.ToUnixTimeMilliseconds()}";
 
     public static int TotalPages(int total, int pageSize) =>
         pageSize <= 0 ? 0 : (int)Math.Ceiling(total / (double)pageSize);
