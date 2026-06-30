@@ -81,12 +81,7 @@ public sealed class AuthController(UserManager<ApplicationUser> users, SignInMan
         return result.Succeeded ? NoContent() : BadRequest(new { message = "The reset link is invalid or expired." });
     }
 
-    private async Task<UserDto> BuildUserDto(ApplicationUser user)
-    {
-        var uploadCount = await database.Files.CountAsync(x => x.UploaderId == user.Id);
-        var storageUsed = await database.Files.Where(x => x.UploaderId == user.Id).SumAsync(x => (long?)x.OriginalSize) ?? 0;
-        return ApiMap.ToUserDto(user, storageUsed, uploadCount);
-    }
+    private Task<UserDto> BuildUserDto(ApplicationUser user) => ApiMap.ToUserDtoAsync(database, user, HttpContext.RequestAborted);
 }
 
 public sealed record RegisterRequest([Required, RegularExpression("^[a-zA-Z0-9_]{3,32}$")] string Username, [Required, MinLength(12), MaxLength(128)] string Password);

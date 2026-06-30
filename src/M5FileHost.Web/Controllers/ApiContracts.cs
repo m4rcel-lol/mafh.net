@@ -1,10 +1,12 @@
 using M5FileHost.Core;
+using M5FileHost.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 
 namespace M5FileHost.Web.Controllers;
 
 // Response shapes shared by the JSON API consumed by the React SPA. Property
 // names are serialized as camelCase by the default web JSON options, matching
-// the client interfaces in the former cool-frontend (src/api/types.ts).
+// the client interfaces in frontend/src/api/types.ts.
 public sealed record UserDto(
     Guid Id,
     string? Username,
@@ -12,7 +14,10 @@ public sealed record UserDto(
     bool IsBanned,
     string? AvatarUrl,
     long StorageUsed,
+    long StorageQuota,
     int UploadCount,
+    long TotalViews,
+    long TotalDownloads,
     bool NsfwPreference);
 
 public sealed record FileDto(
@@ -41,9 +46,26 @@ public static class ApiMap
     public static string? AvatarUrl(ApplicationUser user) =>
         user.AvatarPath is null ? null : $"/api/users/{user.UserName}/avatar";
 
-    public static UserDto ToUserDto(ApplicationUser user, long storageUsed, int uploadCount) =>
-        new(user.Id, user.UserName, Role(user.Role), user.IsBanned, AvatarUrl(user), storageUsed, uploadCount, user.NsfwAllowed);
-
     public static int TotalPages(int total, int pageSize) =>
         pageSize <= 0 ? 0 : (int)Math.Ceiling(total / (double)pageSize);
+
+    // Builds the user DTO including real aggregate usage (uploads, storage,
+    // views, downloads) in a single grouped query.
+    public static async Task<UserDto> ToUserDtoAsync(AppDbContext database, ApplicationUser user, CancellationToken cancellationToken)
+    {
+        var stats = await database.Files.Where(x => x.UploaderId == user.Id)
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                Count = g.Count(),
+                Size = (long?)g.Sum(f => f.OriginalSize) ?? 0,
+                Views = (long?)g.Sum(f => (long)f.ViewCount) ?? 0,
+                Downloads = (long?)g.Sum(f => (long)f.DownloadCount) ?? 0
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+        return new UserDto(
+            user.Id, user.UserName, Role(user.Role), user.IsBanned, AvatarUrl(user),
+            stats?.Size ?? 0, user.StorageQuotaBytes, stats?.Count ?? 0,
+            stats?.Views ?? 0, stats?.Downloads ?? 0, user.NsfwAllowed);
+    }
 }

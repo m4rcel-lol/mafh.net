@@ -17,8 +17,7 @@ public sealed class UsersController(AppDbContext database, UserManager<Applicati
     {
         var user = await database.Users.AsNoTracking().SingleOrDefaultAsync(x => x.NormalizedUserName == username.ToUpper(), cancellationToken);
         if (user is null || !user.PublicProfile) return NotFound();
-        var (storageUsed, uploadCount) = await Usage(user.Id, cancellationToken);
-        return Ok(ApiMap.ToUserDto(user, storageUsed, uploadCount));
+        return Ok(await ApiMap.ToUserDtoAsync(database, user, cancellationToken));
     }
 
     [HttpPatch("me"), Authorize, ValidateAntiForgeryToken]
@@ -32,8 +31,7 @@ public sealed class UsersController(AppDbContext database, UserManager<Applicati
         user.UpdatedAt = DateTimeOffset.UtcNow;
         var result = await users.UpdateAsync(user);
         if (!result.Succeeded) return BadRequest(new { message = string.Join(" ", result.Errors.Select(x => x.Description)) });
-        var (storageUsed, uploadCount) = await Usage(user.Id, cancellationToken);
-        return Ok(ApiMap.ToUserDto(user, storageUsed, uploadCount));
+        return Ok(await ApiMap.ToUserDtoAsync(database, user, cancellationToken));
     }
 
     [HttpPost("me/password"), Authorize, ValidateAntiForgeryToken]
@@ -60,8 +58,7 @@ public sealed class UsersController(AppDbContext database, UserManager<Applicati
         var relative = Path.Combine("avatars", $"{user.Id:N}.webp"); var path = storage.GetAbsolutePath(relative); Directory.CreateDirectory(Path.GetDirectoryName(path)!); image.Write(path);
         if (user.AvatarPath is not null && user.AvatarPath != relative) System.IO.File.Delete(storage.GetAbsolutePath(user.AvatarPath));
         user.AvatarPath = relative; user.UpdatedAt = DateTimeOffset.UtcNow; await users.UpdateAsync(user);
-        var (storageUsed, uploadCount) = await Usage(user.Id, cancellationToken);
-        return Ok(ApiMap.ToUserDto(user, storageUsed, uploadCount));
+        return Ok(await ApiMap.ToUserDtoAsync(database, user, cancellationToken));
     }
 
     [HttpGet("{username}/avatar"), AllowAnonymous]
@@ -70,13 +67,6 @@ public sealed class UsersController(AppDbContext database, UserManager<Applicati
         var user = await database.Users.AsNoTracking().SingleOrDefaultAsync(x => x.NormalizedUserName == username.ToUpper() && x.PublicProfile, cancellationToken);
         if (user?.AvatarPath is null) return NotFound(); var path = storage.GetAbsolutePath(user.AvatarPath);
         return System.IO.File.Exists(path) ? PhysicalFile(path, "image/webp") : NotFound();
-    }
-
-    private async Task<(long StorageUsed, int UploadCount)> Usage(Guid userId, CancellationToken cancellationToken)
-    {
-        var uploadCount = await database.Files.CountAsync(x => x.UploaderId == userId, cancellationToken);
-        var storageUsed = await database.Files.Where(x => x.UploaderId == userId).SumAsync(x => (long?)x.OriginalSize, cancellationToken) ?? 0;
-        return (storageUsed, uploadCount);
     }
 
     private static string? Clean(string? value, int max) { var clean = value?.Trim(); return string.IsNullOrEmpty(clean) ? null : clean[..Math.Min(clean.Length, max)]; }
